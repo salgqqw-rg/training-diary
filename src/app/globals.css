@@ -26,3 +26,5 @@ table { width:100%; border-collapse:collapse; font-size:14px; margin:6px 0; }
 td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
 .workout { border-top:1px solid var(--line); padding:10px 0; }
 .exercise { margin:10px 0; }
+.password-field { display: flex; gap: 6px; }
+.password-field input { flex: 1; min-width: 0; }

@@ -1,4 +1,5 @@
 import { signIn, signUp } from "@/lib/auth-actions";
+import { PasswordInput } from "@/components/password-input";
 
 export default async function LoginPage({
   searchParams,
@@ -12,14 +13,14 @@ export default async function LoginPage({
       <h2>Вход</h2>
       <form action={signIn} className="stack">
         <input name="email" type="email" required placeholder="Email" />
-        <input name="password" type="password" required placeholder="Пароль" />
+        <PasswordInput name="password" required placeholder="Пароль" />
         <button className="primary">Войти</button>
       </form>
       <h2>Регистрация</h2>
       <form action={signUp} className="stack">
         <input name="name" required placeholder="Имя (будет видно в ленте)" />
         <input name="email" type="email" required placeholder="Email" />
-        <input name="password" type="password" minLength={6} required placeholder="Пароль (от 6 символов)" />
+        <PasswordInput name="password" minLength={6} required placeholder="Пароль (от 6 символов)" />
         <button className="primary">Создать аккаунт</button>
       </form>
     </div>
