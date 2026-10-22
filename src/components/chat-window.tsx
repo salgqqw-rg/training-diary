@@ -21,6 +21,7 @@ export function ChatWindow({
   const [msgs, setMsgs] = useState<ChatMessage[]>(() => uniq(initial));
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
   const busy = useRef(false); // синхронный guard: серверный action не выполнится дважды
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -50,6 +51,7 @@ export function ChatWindow({
     const result = await sendMessage(fd);
     if (result) setError(result);
     formRef.current?.reset(); // очищаем поле ввода и выбранный файл
+    setFileName(null);
     await refresh();
     busy.current = false;
     setSending(false);
@@ -80,9 +82,18 @@ export function ChatWindow({
       {error && <p className="danger">{error}</p>}
       <form ref={formRef} action={handleSend} className="row" style={{ marginTop: 8 }}>
         <input type="hidden" name="recipient" value={partnerId} />
-        <label title="Прикрепить фото" style={{ margin: 0 }}>
-          📎
-          <input name="photo" type="file" accept="image/*" style={{ display: "none" }} />
+        <label className="attach" title="Прикрепить фото (до 10 МБ)">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>
+          <input
+            name="photo"
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+          />
         </label>
         <input
           name="body"
@@ -95,6 +106,7 @@ export function ChatWindow({
           {sending ? "…" : "Отправить"}
         </button>
       </form>
+      {fileName && <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>🖼 {fileName}</p>}
     </div>
   );
 }

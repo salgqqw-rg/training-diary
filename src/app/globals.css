@@ -44,7 +44,8 @@ td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
 .msg.me { align-self: flex-end; background: var(--acc); color: #fff; border-color: var(--acc); }
 .msg time { font-size: 11px; opacity: .75; display: block; margin-top: 2px; }
 .chat-photo { border-radius: 8px; display: block; cursor: pointer; }
-.chat-msgs label { margin: 0; color: var(--text); cursor: pointer; font-size: 16px; }
+.attach { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 38px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); cursor: pointer; }
+.attach:hover { background: var(--bg); border-color: var(--acc); color: var(--acc); }
 .contact { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: inherit; }
 .contact:hover { background: var(--bg); }
 .contact.active { background: var(--bg); }
