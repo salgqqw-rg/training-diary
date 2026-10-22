@@ -82,12 +82,7 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0; 
 td, th { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; }
 th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 
-/* ============ Шапка + бегущая строка ============ */
-.ticker { overflow: hidden; background: var(--green); color: #000; user-select: none; }
-.ticker-track { display: flex; width: max-content; animation: marquee 26s linear infinite; }
-.ticker-group { display: flex; gap: 28px; padding: 5px 14px 5px 28px; white-space: nowrap; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-@keyframes marquee { to { transform: translateX(-50%); } }
-
+/* ============ Шапка ============ */
 .topbar {
   display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
   gap: 10px; padding: 12px 16px;

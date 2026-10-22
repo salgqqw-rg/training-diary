@@ -19,30 +19,6 @@ const unbounded = Unbounded({
 
 export const metadata = { title: "Дневник тренировок" };
 
-// Тексты бегущей строки в зелёной ленте сверху (как промо-лента reckful)
-const TICKER = [
-  "Записывай каждую тренировку",
-  "Следи за прогрессом",
-  "Питание, сон и замеры под контролем",
-  "Стать сильнее — это цель",
-];
-
-function Ticker() {
-  return (
-    <div className="ticker" aria-hidden="true">
-      <div className="ticker-track">
-        {[0, 1].map((copy) => (
-          <span className="ticker-group" key={copy}>
-            {TICKER.map((t, i) => (
-              <span key={i}>{t}&nbsp;&nbsp;✦</span>
-            ))}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -52,7 +28,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     return (
       <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
         <body>
-          <Ticker />
           <header className="topbar"><span className="logo">Дневник тренировок</span></header>
           <main>{children}</main>
         </body>
@@ -71,7 +46,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
       <body>
-        <Ticker />
         <header className="topbar">
           <Link href="/" className="logo">Дневник тренировок</Link>
           <nav>
