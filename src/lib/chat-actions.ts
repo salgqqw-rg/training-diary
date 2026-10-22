@@ -38,13 +38,6 @@ export async function fetchMessages(partnerId: string): Promise<ChatMessage[]> {
   if (partnerId === user.id) return [];
   if (!(await isLinked(supabase, user.id, partnerId))) return [];
 
-  await supabase
-    .from("messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("recipient_id", user.id)
-    .eq("sender_id", partnerId)
-    .is("read_at", null);
-
   const { data } = await supabase
     .from("messages")
     .select("id, sender_id, body, image_url, image_path, created_at, read_at")
@@ -53,6 +46,17 @@ export async function fetchMessages(partnerId: string): Promise<ChatMessage[]> {
     .limit(200);
 
   const list = (data ?? []) as ChatMessage[];
+  // Отмечаем прочитанными только непрочитанные входящие — лишних UPDATE нет
+  const unreadIds = list
+    .filter((m) => m.sender_id === partnerId && !m.read_at)
+    .map((m) => m.id);
+  if (unreadIds.length > 0) {
+    await supabase
+      .from("messages")
+      .update({ read_at: new Date().toISOString() })
+      .in("id", unreadIds)
+      .is("read_at", null);
+  }
   return list.reverse();
 }
 
