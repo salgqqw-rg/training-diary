@@ -1,0 +1,57 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+async function requireUser() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  return { supabase, user };
+}
+
+const goto = (key: "error" | "ok", msg: string): never =>
+  redirect(`/daily?${key}=${encodeURIComponent(msg)}`);
+
+const NUMERIC_FIELDS = [
+  "sleep_h", "steps", "kcal", "protein_g", "fat_g", "carbs_g",
+] as const;
+
+// Сохранить запись за день: повторный ввод за ту же дату обновит её
+export async function saveDailyLog(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const date = String(fd.get("log_date") ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) goto("error", "Выберите дату");
+
+  const record: Record<string, string | number | null> = {
+    user_id: user.id,
+    log_date: date,
+    note: String(fd.get("note") ?? "").trim() || null,
+  };
+  for (const f of NUMERIC_FIELDS) {
+    const raw = String(fd.get(f) ?? "").trim().replace(",", ".");
+    record[f] = raw === "" ? null : Number(raw);
+    if (record[f] !== null && Number.isNaN(record[f] as number)) {
+      goto("error", "Некорректное число в одном из полей");
+    }
+  }
+
+  const { error } = await supabase
+    .from("daily_logs")
+    .upsert(record, { onConflict: "user_id,log_date" });
+  if (error) goto("error", "Не удалось сохранить запись: " + error.message);
+
+  revalidatePath("/daily");
+  goto("ok", `Запись за ${date} сохранена`);
+}
+
+export async function deleteDailyLog(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  await supabase
+    .from("daily_logs")
+    .delete()
+    .eq("id", String(fd.get("id") ?? ""))
+    .eq("user_id", user.id);
+  revalidatePath("/daily");
+}

@@ -10,10 +10,16 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // RLS отдаёт цикл только владельцу или если он публичный
-  const { data: cycle } = await supabase.from("cycles").select("*").eq("id", id).maybeSingle();
+  // RLS отдаёт цикл владельцу, его тренеру (в режиме просмотра) или если цикл публичный
+  const { data: cycle } = await supabase
+    .from("cycles")
+    .select("*, profiles(display_name)")
+    .eq("id", id)
+    .maybeSingle();
   if (!cycle) notFound();
   const isOwner = user?.id === cycle.user_id;
+  const profiles = Array.isArray(cycle.profiles) ? cycle.profiles : [cycle.profiles];
+  const ownerName = profiles[0]?.display_name ?? null;
 
   const [{ data: workouts }, { data: exercises }, { data: sets }] = await Promise.all([
     supabase.from("workouts").select("*").eq("cycle_id", id).order("created_at"),
@@ -44,6 +50,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
       <h1>{cycle.name}</h1>
       <p className="muted">
         {cycle.weeks_count} нед. · {cycle.is_public ? "публичный" : "приватный"}
+        {!isOwner && ownerName && ` · ${ownerName}`}
         {!isOwner && " · режим просмотра"}
       </p>
       <datalist id="names">

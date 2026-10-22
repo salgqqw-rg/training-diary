@@ -28,3 +28,13 @@ td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
 .exercise { margin:10px 0; }
 .password-field { display: flex; gap: 6px; }
 .password-field input { flex: 1; min-width: 0; }
+.avatar { border-radius: 50%; object-fit: cover; }
+.avatar.big { width: 72px; height: 72px; }
+.avatar.sm { width: 26px; height: 26px; }
+.avatar.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--acc); color: #fff; font-weight: 700; }
+.avatar.big.placeholder { font-size: 28px; }
+.sm-link { font-size: 13px; }
+.avatar.sm.placeholder { font-size: 13px; }
+.profile-head { display: flex; gap: 12px; align-items: center; }
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+label input { margin-top: 4px; width: 100%; }
