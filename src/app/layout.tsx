@@ -17,7 +17,7 @@ const unbounded = Unbounded({
   display: "swap",
 });
 
-export const metadata = { title: "Дневник тренировок" };
+export const metadata = { title: "IRONLOG" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     return (
       <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
         <body>
-          <header className="topbar"><span className="logo">Дневник тренировок</span></header>
+          <header className="topbar"><span className="logo">IRONLOG</span></header>
           <main>{children}</main>
         </body>
       </html>
@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
       <body>
         <header className="topbar">
-          <Link href="/" className="logo">Дневник тренировок</Link>
+          <Link href="/" className="logo">IRONLOG</Link>
           <nav>
             <Link href="/">Кабинет</Link>
             <Link href="/goals">Цели</Link>
