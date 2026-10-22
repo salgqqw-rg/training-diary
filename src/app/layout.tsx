@@ -1,13 +1,14 @@
 import "./globals.css";
 import Link from "next/link";
-import { Inter, Unbounded } from "next/font/google";
+import { Manrope, Unbounded } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 
-// Шрифты в стиле reckful: Inter для текста, Unbounded для заголовков.
-// next/font скачивает их один раз на билде и отдаёт со своего домена.
-const inter = Inter({
+// Шрифты: Manrope для текста и заголовков (сборно-геометрический, как в фитнес-макетах),
+// Unbounded для логотипа IRONLOG.
+const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
   display: "swap",
 });
 const unbounded = Unbounded({
@@ -26,7 +27,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Неавторизованным показываем только название, без навигации
   if (!user) {
     return (
-      <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
+      <html lang="ru" className={`${manrope.variable} ${unbounded.variable}`}>
         <body>
           <header className="topbar"><span className="logo">IRONLOG</span></header>
           <main>{children}</main>
@@ -44,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const name = profile?.display_name ?? "";
 
   return (
-    <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
+    <html lang="ru" className={`${manrope.variable} ${unbounded.variable}`}>
       <body>
         <header className="topbar">
           <Link href="/" className="logo">IRONLOG</Link>

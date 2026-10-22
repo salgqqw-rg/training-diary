@@ -1,105 +1,106 @@
 /* ============================================================
-   Дизайн в стиле reckful.ru: чёрный фон, фиолетовый акцент
-   #5d06b9, неоновый зелёный #00ff4d, заголовки Unbounded.
-   Шрифты подключаются через next/font (переменные --font-*).
+   Стиль «Athlete» (тёмный фитнес-интерфейс): чёрный фон,
+   фиолетовый градиент #7c3aed → #a855f7, синий акцент #3b82f6,
+   тонкие тёмные карточки с крупным скруглением.
+   Шрифты: Manrope (текст и заголовки), Unbounded (логотип).
    ============================================================ */
 
 :root {
   --bg: #000000;
-  --card: #0f0f13;
-  --card2: #16161b;
-  --text: #f2f2f5;
-  --muted: #8b8b95;
-  --acc: #5d06b9;          /* фирменный фиолетовый reckful */
-  --acc-hi: #7d22e6;       /* ховер фиолетового */
-  --acc-soft: #b375ff;     /* фиолетовый для текста/ссылок */
-  --green: #00ff4d;        /* фирменный неон reckful */
-  --line: #232329;
-  --danger: #ff4d5e;
+  --card: #131317;
+  --card2: #1b1b21;
+  --text: #f5f5f7;
+  --muted: #8e8e99;
+  --acc: #7c3aed;            /* фиолетовый как в макете */
+  --acc-2: #a855f7;          /* второй конец градиента */
+  --acc-soft: #c4b5fd;       /* светло-фиолетовый для ссылок */
+  --blue: #3b82f6;           /* синий акцент (питание и т.п.) */
+  --green: #34d399;
+  --line: #26262c;
+  --danger: #fb7185;
 }
 
 * { box-sizing: border-box; }
 
-/* тонкий фиолетовый скроллбар везде, как на референсе */
+/* тонкий фиолетовый скроллбар */
 * { scrollbar-width: thin; scrollbar-color: var(--acc) transparent; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--acc); border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: var(--acc-hi); }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--acc); }
 
 ::selection { background: var(--acc); color: #fff; }
 
 body {
   margin: 0;
-  font: 14.5px/1.5 var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.5 var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--bg);
-  /* фиолетовое свечение сверху, как в hero reckful */
-  background-image: radial-gradient(900px 420px at 50% -160px, rgba(93, 6, 185, .30), transparent 70%);
-  background-repeat: no-repeat;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3 {
-  font-family: var(--font-unbounded), var(--font-inter), sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .02em;
-  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
-main h1 { font-size: 26px; margin: 6px 0 14px; }
+main h1 { font-size: 27px; margin: 8px 0 16px; }
+h2 { font-size: 19px; }
+h3 { font-size: 16px; }
 
 a { color: var(--acc-soft); text-decoration: none; }
 a:hover { color: #fff; }
 
 input {
-  font: inherit; padding: 9px 12px;
-  border: 1px solid var(--line); border-radius: 10px;
-  background: var(--card); color: var(--text); min-width: 0;
+  font: inherit; padding: 10px 13px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card2); color: var(--text); min-width: 0;
   transition: border-color .15s, box-shadow .15s;
 }
-input:focus { outline: none; border-color: var(--acc-hi); box-shadow: 0 0 0 3px rgba(125, 34, 230, .18); }
-input::placeholder { color: #55555e; }
+input:focus { outline: none; border-color: var(--acc-2); box-shadow: 0 0 0 3px rgba(124, 58, 237, .25); }
+input::placeholder { color: #57575f; }
 
 button {
-  font: inherit; padding: 9px 14px;
-  border: 1px solid var(--line); border-radius: 10px;
+  font: inherit; padding: 10px 16px;
+  border: 1px solid var(--line); border-radius: 12px;
   background: var(--card); color: var(--text); cursor: pointer;
-  text-transform: uppercase; font-size: 12.5px; letter-spacing: .06em; font-weight: 600;
-  transition: background .15s, border-color .15s, color .15s;
+  font-size: 14px; font-weight: 600;
+  transition: background .15s, border-color .15s, box-shadow .15s;
 }
-button:hover { border-color: var(--acc-hi); color: #fff; }
+button:hover { border-color: #3f3f4a; }
 button.primary {
-  background: var(--acc); color: #fff; border-color: var(--acc);
-  padding: 9px 20px;
+  background: linear-gradient(135deg, var(--acc) 0%, var(--acc-2) 100%);
+  color: #fff; border: none;
+  padding: 10px 20px;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, .35);
 }
-button.primary:hover { background: var(--acc-hi); border-color: var(--acc-hi); }
-button.sm { padding: 4px 10px; font-size: 11.5px; }
+button.primary:hover { filter: brightness(1.12); }
+button.sm { padding: 5px 11px; font-size: 13px; border-radius: 9px; }
 button.danger { color: var(--danger); }
 button.danger:hover { border-color: var(--danger); }
 button:disabled { opacity: .55; cursor: default; }
 
 table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0; }
 td, th { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; }
-th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
 
 /* ============ Шапка ============ */
 .topbar {
   display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-  gap: 10px; padding: 12px 16px;
-  background: rgba(5, 5, 8, .88); backdrop-filter: blur(8px);
+  gap: 10px; padding: 13px 16px;
+  background: rgba(2, 2, 4, .85); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 10;
 }
 .logo, .topbar b {
   font-family: var(--font-unbounded), sans-serif;
-  text-transform: uppercase; font-size: 14px; letter-spacing: .12em;
+  font-size: 15px; letter-spacing: .1em; font-weight: 500;
   color: #fff; text-decoration: none;
 }
-.logo::before { content: "■"; color: var(--green); margin-right: 8px; font-size: 10px; vertical-align: 2px; }
+.logo::before { content: "■"; color: var(--acc-2); margin-right: 8px; font-size: 10px; vertical-align: 2px; }
 .topbar nav { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .topbar nav a {
-  color: var(--muted); font-size: 12px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); font-size: 13.5px; font-weight: 600;
   transition: color .15s;
 }
 .topbar nav a:hover { color: #fff; }
@@ -108,8 +109,8 @@ main { max-width: 900px; margin: 0 auto; padding: 18px 16px 32px; }
 
 /* ============ Карточки / сетки ============ */
 .card {
-  background: linear-gradient(180deg, var(--card) 0%, #0b0b0f 100%);
-  border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px;
+  background: var(--card);
+  border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 12px;
 }
 .narrow { max-width: 420px; margin: 32px auto; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -128,50 +129,51 @@ main { max-width: 900px; margin: 0 auto; padding: 18px 16px 32px; }
 .avatar { border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
 .avatar.big { width: 72px; height: 72px; }
 .avatar.sm { width: 26px; height: 26px; }
-.avatar.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--acc); color: #fff; font-weight: 700; }
+.avatar.placeholder { display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--acc), var(--acc-2)); color: #fff; font-weight: 700; }
 .avatar.big.placeholder { font-size: 28px; }
 .avatar.sm.placeholder { font-size: 13px; }
-.sm-link { font-size: 13px; }
+.sm-link { font-size: 13.5px; color: var(--acc-soft); font-weight: 600; }
+.sm-link:hover { color: #fff; }
 
 .profile-head { display: flex; gap: 12px; align-items: center; }
-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
-label input { margin-top: 5px; width: 100%; font-size: 14px; letter-spacing: normal; text-transform: none; font-weight: 400; }
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+label input { margin-top: 5px; width: 100%; }
 
 /* ============ Чат ============ */
 .chat-wrap { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
 .chat-contacts { min-width: 210px; max-width: 280px; flex: 1; }
 .chat-main { flex: 3; min-width: 280px; display: flex; flex-direction: column; }
 .chat-msgs {
-  border: 1px solid var(--line); border-radius: 14px; padding: 12px; height: 420px; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 6px; background: #08080b;
+  border: 1px solid var(--line); border-radius: 16px; padding: 12px; height: 420px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px; background: #0a0a0d;
   scrollbar-width: thin; scrollbar-color: var(--acc) transparent;
 }
 .chat-msgs::-webkit-scrollbar { width: 7px; }
 .chat-msgs::-webkit-scrollbar-track { background: transparent; }
-.chat-msgs::-webkit-scrollbar-thumb { background: var(--acc); border-radius: 8px; }
-.chat-msgs::-webkit-scrollbar-thumb:hover { background: var(--acc-hi); }
+.chat-msgs::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 8px; }
+.chat-msgs::-webkit-scrollbar-thumb:hover { background: var(--acc); }
 .msg {
-  max-width: 80%; padding: 7px 11px; border-radius: 12px;
+  max-width: 80%; padding: 8px 12px; border-radius: 14px;
   background: var(--card2); border: 1px solid var(--line);
   align-self: flex-start; word-break: break-word;
 }
 .msg.me {
   align-self: flex-end; color: #fff; border: none;
-  background: linear-gradient(135deg, var(--acc) 0%, #4a1a86 100%);
+  background: linear-gradient(135deg, var(--acc) 0%, var(--acc-2) 100%);
 }
 .msg time { font-size: 11px; opacity: .7; display: block; margin-top: 2px; }
 .chat-photo { border-radius: 8px; display: block; cursor: pointer; }
 .attach {
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 40px; height: 38px; border: 1px solid var(--line); border-radius: 10px;
-  color: var(--text); cursor: pointer;
+  width: 41px; height: 41px; border: 1px solid var(--line); border-radius: 12px;
+  color: var(--text); cursor: pointer; background: var(--card2);
 }
 .attach svg { display: block; }
-.attach:hover { background: var(--card2); border-color: var(--acc-hi); color: var(--acc-soft); }
-.contact { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: inherit; font-size: 14px; }
+.attach:hover { border-color: var(--acc-2); color: var(--acc-soft); }
+.contact { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; text-decoration: none; color: inherit; font-size: 14.5px; }
 .contact:hover { background: var(--card2); color: #fff; }
-.contact.active { background: var(--card2); color: #fff; box-shadow: inset 2px 0 0 var(--acc); }
+.contact.active { background: var(--card2); color: #fff; box-shadow: inset 2px 0 0 var(--acc-2); }
 .badge {
-  background: var(--green); color: #000; border-radius: 10px;
-  padding: 1px 7px; font-size: 11.5px; font-weight: 700; min-width: 20px; text-align: center;
+  background: linear-gradient(135deg, var(--acc), var(--acc-2)); color: #fff; border-radius: 999px;
+  padding: 1px 8px; font-size: 12px; font-weight: 700; min-width: 20px; text-align: center;
 }
