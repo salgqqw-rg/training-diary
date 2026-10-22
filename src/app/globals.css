@@ -1,60 +1,182 @@
-:root { --bg:#f5f6f8; --card:#fff; --text:#1d1f24; --muted:#6b7280; --acc:#2563eb; --line:#e5e7eb; --danger:#dc2626; }
-@media (prefers-color-scheme: dark) {
-  :root { --bg:#0f1115; --card:#181b22; --text:#e8eaf0; --muted:#9aa1ad; --acc:#4f8ff7; --line:#2a2e38; --danger:#f87171; }
+/* ============================================================
+   Дизайн в стиле reckful.ru: чёрный фон, фиолетовый акцент
+   #5d06b9, неоновый зелёный #00ff4d, заголовки Unbounded.
+   Шрифты подключаются через next/font (переменные --font-*).
+   ============================================================ */
+
+:root {
+  --bg: #000000;
+  --card: #0f0f13;
+  --card2: #16161b;
+  --text: #f2f2f5;
+  --muted: #8b8b95;
+  --acc: #5d06b9;          /* фирменный фиолетовый reckful */
+  --acc-hi: #7d22e6;       /* ховер фиолетового */
+  --acc-soft: #b375ff;     /* фиолетовый для текста/ссылок */
+  --green: #00ff4d;        /* фирменный неон reckful */
+  --line: #232329;
+  --danger: #ff4d5e;
 }
+
 * { box-sizing: border-box; }
-body { margin:0; font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }
-a { color:var(--acc); }
-.topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:12px 16px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; }
-.topbar nav { display:flex; gap:12px; }
-main { max-width:900px; margin:0 auto; padding:16px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
-.narrow { max-width:420px; margin:24px auto; }
-.row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.between { justify-content:space-between; }
-.stack { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
-.muted { color:var(--muted); }
-.danger { color:var(--danger); }
-.up { color:#16a34a; }
-.down { color:var(--danger); }
-input { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); min-width:0; }
-button { font:inherit; padding:7px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--text); cursor:pointer; }
-button.primary { background:var(--acc); color:#fff; border-color:var(--acc); }
-button.sm { padding:3px 8px; font-size:13px; }
-button.danger { color:var(--danger); }
-table { width:100%; border-collapse:collapse; font-size:14px; margin:6px 0; }
-td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
-.workout { border-top:1px solid var(--line); padding:10px 0; }
-.exercise { margin:10px 0; }
+
+/* тонкий фиолетовый скроллбар везде, как на референсе */
+* { scrollbar-width: thin; scrollbar-color: var(--acc) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--acc); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--acc-hi); }
+
+::selection { background: var(--acc); color: #fff; }
+
+body {
+  margin: 0;
+  font: 14.5px/1.5 var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  /* фиолетовое свечение сверху, как в hero reckful */
+  background-image: radial-gradient(900px 420px at 50% -160px, rgba(93, 6, 185, .30), transparent 70%);
+  background-repeat: no-repeat;
+  color: var(--text);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-unbounded), var(--font-inter), sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  line-height: 1.15;
+}
+main h1 { font-size: 26px; margin: 6px 0 14px; }
+
+a { color: var(--acc-soft); text-decoration: none; }
+a:hover { color: #fff; }
+
+input {
+  font: inherit; padding: 9px 12px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--text); min-width: 0;
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus { outline: none; border-color: var(--acc-hi); box-shadow: 0 0 0 3px rgba(125, 34, 230, .18); }
+input::placeholder { color: #55555e; }
+
+button {
+  font: inherit; padding: 9px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--text); cursor: pointer;
+  text-transform: uppercase; font-size: 12.5px; letter-spacing: .06em; font-weight: 600;
+  transition: background .15s, border-color .15s, color .15s;
+}
+button:hover { border-color: var(--acc-hi); color: #fff; }
+button.primary {
+  background: var(--acc); color: #fff; border-color: var(--acc);
+  padding: 9px 20px;
+}
+button.primary:hover { background: var(--acc-hi); border-color: var(--acc-hi); }
+button.sm { padding: 4px 10px; font-size: 11.5px; }
+button.danger { color: var(--danger); }
+button.danger:hover { border-color: var(--danger); }
+button:disabled { opacity: .55; cursor: default; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0; }
+td, th { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+
+/* ============ Шапка + бегущая строка ============ */
+.ticker { overflow: hidden; background: var(--green); color: #000; user-select: none; }
+.ticker-track { display: flex; width: max-content; animation: marquee 26s linear infinite; }
+.ticker-group { display: flex; gap: 28px; padding: 5px 14px 5px 28px; white-space: nowrap; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+  gap: 10px; padding: 12px 16px;
+  background: rgba(5, 5, 8, .88); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo, .topbar b {
+  font-family: var(--font-unbounded), sans-serif;
+  text-transform: uppercase; font-size: 14px; letter-spacing: .12em;
+  color: #fff; text-decoration: none;
+}
+.logo::before { content: "■"; color: var(--green); margin-right: 8px; font-size: 10px; vertical-align: 2px; }
+.topbar nav { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.topbar nav a {
+  color: var(--muted); font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  transition: color .15s;
+}
+.topbar nav a:hover { color: #fff; }
+
+main { max-width: 900px; margin: 0 auto; padding: 18px 16px 32px; }
+
+/* ============ Карточки / сетки ============ */
+.card {
+  background: linear-gradient(180deg, var(--card) 0%, #0b0b0f 100%);
+  border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px;
+}
+.narrow { max-width: 420px; margin: 32px auto; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.muted { color: var(--muted); }
+.danger { color: var(--danger); }
+.up { color: var(--green); }
+.down { color: var(--danger); }
+
+.workout { border-top: 1px solid var(--line); padding: 10px 0; }
+.exercise { margin: 10px 0; }
 .password-field { display: flex; gap: 6px; }
 .password-field input { flex: 1; min-width: 0; }
-.avatar { border-radius: 50%; object-fit: cover; }
+
+.avatar { border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
 .avatar.big { width: 72px; height: 72px; }
 .avatar.sm { width: 26px; height: 26px; }
 .avatar.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--acc); color: #fff; font-weight: 700; }
 .avatar.big.placeholder { font-size: 28px; }
+.avatar.sm.placeholder { font-size: 13px; }
 .sm-link { font-size: 13px; }
 
-/* Чат */
+.profile-head { display: flex; gap: 12px; align-items: center; }
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+label input { margin-top: 5px; width: 100%; font-size: 14px; letter-spacing: normal; text-transform: none; font-weight: 400; }
+
+/* ============ Чат ============ */
 .chat-wrap { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
 .chat-contacts { min-width: 210px; max-width: 280px; flex: 1; }
 .chat-main { flex: 3; min-width: 280px; display: flex; flex-direction: column; }
-.chat-msgs { border: 1px solid var(--line); border-radius: 12px; padding: 10px; height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: var(--bg); scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.chat-msgs {
+  border: 1px solid var(--line); border-radius: 14px; padding: 12px; height: 420px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px; background: #08080b;
+  scrollbar-width: thin; scrollbar-color: var(--acc) transparent;
+}
 .chat-msgs::-webkit-scrollbar { width: 7px; }
 .chat-msgs::-webkit-scrollbar-track { background: transparent; }
-.chat-msgs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
-.chat-msgs::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-.msg { max-width: 80%; padding: 6px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); align-self: flex-start; word-break: break-word; }
-.msg.me { align-self: flex-end; background: var(--acc); color: #fff; border-color: var(--acc); }
-.msg time { font-size: 11px; opacity: .75; display: block; margin-top: 2px; }
+.chat-msgs::-webkit-scrollbar-thumb { background: var(--acc); border-radius: 8px; }
+.chat-msgs::-webkit-scrollbar-thumb:hover { background: var(--acc-hi); }
+.msg {
+  max-width: 80%; padding: 7px 11px; border-radius: 12px;
+  background: var(--card2); border: 1px solid var(--line);
+  align-self: flex-start; word-break: break-word;
+}
+.msg.me {
+  align-self: flex-end; color: #fff; border: none;
+  background: linear-gradient(135deg, var(--acc) 0%, #4a1a86 100%);
+}
+.msg time { font-size: 11px; opacity: .7; display: block; margin-top: 2px; }
 .chat-photo { border-radius: 8px; display: block; cursor: pointer; }
-.attach { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 38px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); cursor: pointer; }
-.attach:hover { background: var(--bg); border-color: var(--acc); color: var(--acc); }
-.contact { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: inherit; }
-.contact:hover { background: var(--bg); }
-.contact.active { background: var(--bg); }
-.badge { background: var(--acc); color: #fff; border-radius: 10px; padding: 0 6px; font-size: 12px; min-width: 20px; text-align: center; }
-.avatar.sm.placeholder { font-size: 13px; }
-.profile-head { display: flex; gap: 12px; align-items: center; }
-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-label input { margin-top: 4px; width: 100%; }
+.attach {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 40px; height: 38px; border: 1px solid var(--line); border-radius: 10px;
+  color: var(--text); cursor: pointer;
+}
+.attach svg { display: block; }
+.attach:hover { background: var(--card2); border-color: var(--acc-hi); color: var(--acc-soft); }
+.contact { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-radius: 10px; text-decoration: none; color: inherit; font-size: 14px; }
+.contact:hover { background: var(--card2); color: #fff; }
+.contact.active { background: var(--card2); color: #fff; box-shadow: inset 2px 0 0 var(--acc); }
+.badge {
+  background: var(--green); color: #000; border-radius: 10px;
+  padding: 1px 7px; font-size: 11.5px; font-weight: 700; min-width: 20px; text-align: center;
+}
