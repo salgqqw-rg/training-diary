@@ -43,6 +43,8 @@ td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
 .msg { max-width: 80%; padding: 6px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); align-self: flex-start; word-break: break-word; }
 .msg.me { align-self: flex-end; background: var(--acc); color: #fff; border-color: var(--acc); }
 .msg time { font-size: 11px; opacity: .75; display: block; margin-top: 2px; }
+.chat-photo { border-radius: 8px; display: block; cursor: pointer; }
+.chat-msgs label { margin: 0; color: var(--text); cursor: pointer; font-size: 16px; }
 .contact { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: inherit; }
 .contact:hover { background: var(--bg); }
 .contact.active { background: var(--bg); }

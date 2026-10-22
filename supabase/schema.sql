@@ -139,7 +139,9 @@ create table messages (
   seq bigint generated always as identity,
   sender_id uuid not null references profiles(id) on delete cascade,
   recipient_id uuid not null references profiles(id) on delete cascade,
-  body text not null check (char_length(body) between 1 and 2000),
+  body text check ((body is not null and char_length(body) between 1 and 2000) or image_path is not null),
+  image_path text,
+  image_url text,
   created_at timestamptz not null default now(),
   read_at timestamptz,
   check (sender_id <> recipient_id)
@@ -254,6 +256,7 @@ create policy "goals: write own" on goals for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- Личные сообщения: только участники переписки между связанными аккаунтами
+-- Личные сообщения: только участники переписки между связанными аккаунтами
 create policy "messages: read own dialogs" on messages for select
   using (sender_id = auth.uid() or recipient_id = auth.uid());
 create policy "messages: send to linked only" on messages for insert
@@ -322,5 +325,40 @@ create policy "avatars: update own" on storage.objects for update
 create policy "avatars: delete own" on storage.objects for delete
   using (
     bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- ============ Фото в чате (Storage) ============
+insert into storage.buckets (id, name, public)
+values ('chat', 'chat', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "chat: read public" on storage.objects;
+drop policy if exists "chat: upload own" on storage.objects;
+drop policy if exists "chat: update own" on storage.objects;
+drop policy if exists "chat: delete own" on storage.objects;
+
+create policy "chat: read public" on storage.objects for select
+  using (bucket_id = 'chat');
+
+create policy "chat: upload own" on storage.objects for insert
+  with check (
+    bucket_id = 'chat'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "chat: update own" on storage.objects for update
+  using (
+    bucket_id = 'chat'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  )
+  with check (
+    bucket_id = 'chat'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "chat: delete own" on storage.objects for delete
+  using (
+    bucket_id = 'chat'
     and (storage.foldername(name))[1] = auth.uid()::text
   );

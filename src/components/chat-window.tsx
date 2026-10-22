@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchMessages, sendMessage, type ChatMessage } from "@/lib/chat-actions";
+
+// Убирает дубли, если сообщение успело отправиться дважды
+function uniq(list: ChatMessage[]) {
+  const seen = new Set<string>();
+  return list.filter((m) => !seen.has(m.id) && (seen.add(m.id), true));
+}
 
 export function ChatWindow({
   partnerId,
@@ -12,19 +18,22 @@ export function ChatWindow({
   meId: string;
   initial: ChatMessage[];
 }) {
-  const [msgs, setMsgs] = useState<ChatMessage[]>(initial);
+  const [msgs, setMsgs] = useState<ChatMessage[]>(() => uniq(initial));
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const busy = useRef(false); // синхронный guard: серверный action не выполнится дважды
+  const formRef = useRef<HTMLFormElement>(null);
 
   const refresh = useCallback(async () => {
     const fresh = await fetchMessages(partnerId);
-    setMsgs(fresh);
+    setMsgs(uniq(fresh));
   }, [partnerId]);
 
-  // Обновление входящих, пока страница открыта
+  // Входящие обновляются сами, пока открыт диалог
   useEffect(() => {
-    setMsgs(initial);
-    const timer = setInterval(refresh, 4000);
+    setMsgs(uniq(initial));
+    refresh();
+    const timer = setInterval(refresh, 2500);
     return () => clearInterval(timer);
   }, [refresh, initial]);
 
@@ -34,11 +43,15 @@ export function ChatWindow({
   }, [msgs]);
 
   async function handleSend(fd: FormData) {
+    if (busy.current || sending) return;
+    busy.current = true;
     setSending(true);
     setError(null);
     const result = await sendMessage(fd);
     if (result) setError(result);
+    formRef.current?.reset(); // очищаем поле ввода и выбранный файл
     await refresh();
+    busy.current = false;
     setSending(false);
   }
 
@@ -53,20 +66,29 @@ export function ChatWindow({
         )}
         {msgs.map((m) => (
           <div key={m.id} className={m.sender_id === meId ? "msg me" : "msg"}>
-            <div>{m.body}</div>
+            {m.image_url && (
+              <a href={m.image_url} target="_blank" rel="noopener noreferrer">
+                <img src={m.image_url} alt="Фото" width={220} className="chat-photo" />
+              </a>
+            )}
+            {m.body && <div>{m.body}</div>}
             <time>{time(m.created_at)}</time>
           </div>
         ))}
       </div>
 
       {error && <p className="danger">{error}</p>}
-      <form action={handleSend} className="row" style={{ marginTop: 8 }}>
+      <form ref={formRef} action={handleSend} className="row" style={{ marginTop: 8 }}>
         <input type="hidden" name="recipient" value={partnerId} />
+        <label title="Прикрепить фото" style={{ margin: 0 }}>
+          📎
+          <input name="photo" type="file" accept="image/*" style={{ display: "none" }} />
+        </label>
         <input
           name="body"
           maxLength={2000}
           placeholder="Сообщение…"
-          style={{ flex: 1, minWidth: 200 }}
+          style={{ flex: 1, minWidth: 160 }}
           autoComplete="off"
         />
         <button className="primary" disabled={sending}>
