@@ -35,9 +35,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Link href="/"><b>Дневник тренировок</b></Link>
           <nav>
             <Link href="/">Кабинет</Link>
+            <Link href="/goals">Цели</Link>
             <Link href="/daily">Питание и сон</Link>
             <Link href="/measurements">Характеристики</Link>
             <Link href="/clients">Подопечные</Link>
+            <Link href="/chat">Сообщения</Link>
             <Link href="/feed">Лента</Link>
             <Link href="/profile">Профиль</Link>
             {avatar

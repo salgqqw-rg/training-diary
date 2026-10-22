@@ -110,7 +110,46 @@ create table daily_logs (
   unique (user_id, log_date)
 );
 
+create table supplements (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  kind text not null default 'supplement' check (kind in ('supplement', 'bac', 'course')),
+  name text not null check (char_length(name) between 1 and 100),
+  dosage text check (char_length(dosage) <= 100),
+  start_date date,
+  end_date date,
+  note text check (char_length(note) <= 300),
+  created_at timestamptz not null default now(),
+  check (end_date is null or start_date is null or end_date >= start_date)
+);
+
+create table goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 150),
+  details text check (char_length(details) <= 500),
+  due_date date,
+  status text not null default 'active' check (status in ('active', 'done', 'dropped')),
+  created_at timestamptz not null default now(),
+  done_at timestamptz
+);
+
+create table messages (
+  id uuid primary key default gen_random_uuid(),
+  seq bigint generated always as identity,
+  sender_id uuid not null references profiles(id) on delete cascade,
+  recipient_id uuid not null references profiles(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  check (sender_id <> recipient_id)
+);
+
 create index on daily_logs(user_id);
+create index on supplements(user_id);
+create index on goals(user_id);
+create index on messages(sender_id, recipient_id);
+create index on messages(recipient_id, read_at);
 
 -- Вспомогательные функции для правил доступа
 create or replace function owns_cycle(cid uuid) returns boolean
@@ -146,6 +185,9 @@ alter table coach_links enable row level security;
 alter table measurements enable row level security;
 alter table progress_photos enable row level security;
 alter table daily_logs enable row level security;
+alter table supplements enable row level security;
+alter table goals enable row level security;
+alter table messages enable row level security;
 
 -- Профили видны всем, менять можно только свой
 create policy "profiles: read all" on profiles for select using (true);
@@ -198,6 +240,36 @@ create policy "daily_logs: read own or coach" on daily_logs for select
   using (user_id = auth.uid() or has_active_coach(user_id));
 create policy "daily_logs: write own" on daily_logs for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Добавки / БАДы / курсы ААС: читать свои или тренеру; писать только себе
+create policy "supplements: read own or coach" on supplements for select
+  using (user_id = auth.uid() or has_active_coach(user_id));
+create policy "supplements: write own" on supplements for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Цели: читать свои или тренеру; писать только себе
+create policy "goals: read own or coach" on goals for select
+  using (user_id = auth.uid() or has_active_coach(user_id));
+create policy "goals: write own" on goals for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Личные сообщения: только участники переписки между связанными аккаунтами
+create policy "messages: read own dialogs" on messages for select
+  using (sender_id = auth.uid() or recipient_id = auth.uid());
+create policy "messages: send to linked only" on messages for insert
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1 from coach_links l
+      where l.status = 'active' and (
+        (l.coach_id = auth.uid() and l.trainee_id = recipient_id)
+        or (l.trainee_id = auth.uid() and l.coach_id = recipient_id)
+      )
+    )
+  );
+create policy "messages: recipient marks read" on messages for update
+  using (recipient_id = auth.uid() and read_at is null)
+  with check (recipient_id = auth.uid() and read_at is not null);
 
 -- Профиль создаётся сразу при регистрации
 create or replace function handle_new_user() returns trigger

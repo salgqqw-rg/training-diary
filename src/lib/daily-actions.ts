@@ -55,3 +55,45 @@ export async function deleteDailyLog(fd: FormData) {
     .eq("user_id", user.id);
   revalidatePath("/daily");
 }
+
+// ============ Добавки, БАДы и курсы ААС ============
+
+const KINDS = { supplement: "Добавка", bac: "БАД", course: "Курс ААС" } as const;
+type Kind = keyof typeof KINDS;
+
+// Добавить позицию: название и дозировка вписываются вручную
+export async function addSupplement(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const kindRaw = String(fd.get("kind") ?? "supplement");
+  const kind: Kind = kindRaw in KINDS ? (kindRaw as Kind) : "supplement";
+  const name = String(fd.get("name") ?? "").trim().slice(0, 100);
+  if (!name) goto("error", "Укажите название");
+  const dosage = String(fd.get("dosage") ?? "").trim().slice(0, 100) || null;
+  const startDate = String(fd.get("start_date") ?? "").trim() || null;
+  const endDate = String(fd.get("end_date") ?? "").trim() || null;
+  const note = String(fd.get("note") ?? "").trim().slice(0, 300) || null;
+  if (startDate && endDate && endDate < startDate) {
+    goto("error", "Дата окончания раньше даты начала");
+  }
+
+  const { error } = await supabase.from("supplements").insert({
+    user_id: user.id,
+    kind, name, dosage, start_date: startDate, end_date: endDate, note,
+  });
+  if (error) {
+    goto("error", error.code === "42P01"
+      ? "Таблица не создана: выполните supabase/migration_05_supplements.sql в Supabase"
+      : "Не удалось добавить: " + error.message);
+  }
+  revalidatePath("/daily");
+}
+
+export async function deleteSupplement(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  await supabase
+    .from("supplements")
+    .delete()
+    .eq("id", String(fd.get("id") ?? ""))
+    .eq("user_id", user.id);
+  revalidatePath("/daily");
+}

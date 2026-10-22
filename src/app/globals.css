@@ -34,6 +34,19 @@ td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
 .avatar.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--acc); color: #fff; font-weight: 700; }
 .avatar.big.placeholder { font-size: 28px; }
 .sm-link { font-size: 13px; }
+
+/* Чат */
+.chat-wrap { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+.chat-contacts { min-width: 210px; max-width: 280px; flex: 1; }
+.chat-main { flex: 3; min-width: 280px; display: flex; flex-direction: column; }
+.chat-msgs { border: 1px solid var(--line); border-radius: 12px; padding: 10px; height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+.msg { max-width: 80%; padding: 6px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); align-self: flex-start; word-break: break-word; }
+.msg.me { align-self: flex-end; background: var(--acc); color: #fff; border-color: var(--acc); }
+.msg time { font-size: 11px; opacity: .75; display: block; margin-top: 2px; }
+.contact { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: inherit; }
+.contact:hover { background: var(--bg); }
+.contact.active { background: var(--bg); }
+.badge { background: var(--acc); color: #fff; border-radius: 10px; padding: 0 6px; font-size: 12px; min-width: 20px; text-align: center; }
 .avatar.sm.placeholder { font-size: 13px; }
 .profile-head { display: flex; gap: 12px; align-items: center; }
 label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }

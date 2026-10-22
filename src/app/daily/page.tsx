@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { saveDailyLog, deleteDailyLog } from "@/lib/daily-actions";
+import { saveDailyLog, deleteDailyLog, addSupplement, deleteSupplement } from "@/lib/daily-actions";
 
 const FIELDS: { key: string; label: string; step: string }[] = [
   { key: "sleep_h", label: "Сон, ч", step: "0.1" },
@@ -11,6 +11,12 @@ const FIELDS: { key: string; label: string; step: string }[] = [
   { key: "fat_g", label: "Жиры, г", step: "0.1" },
   { key: "carbs_g", label: "Углеводы, г", step: "0.1" },
 ];
+
+const KINDS: Record<string, string> = {
+  supplement: "Добавка",
+  bac: "БАД",
+  course: "Курс ААС",
+};
 
 const fmt = (v: unknown) => (v === null || v === undefined ? "—" : String(v));
 const today = () => new Date().toISOString().slice(0, 10);
@@ -51,7 +57,14 @@ export default async function DailyPage({
     .eq("user_id", targetId)
     .order("log_date", { ascending: false });
 
+  const { data: suppRows } = await supabase
+    .from("supplements")
+    .select("*")
+    .eq("user_id", targetId)
+    .order("created_at", { ascending: false });
+
   const logs = (rows ?? []) as Record<string, unknown>[];
+  const supplements = (suppRows ?? []) as Record<string, unknown>[];
   const editing = editDate ? logs.find((r) => r.log_date === editDate) : undefined;
   const canEdit = isSelf;
 
@@ -101,6 +114,78 @@ export default async function DailyPage({
           </form>
         </div>
       )}
+
+      <div className="card">
+        <h3>Добавки, БАДы и курсы</h3>
+        {canEdit && (
+          <form action={addSupplement} className="stack">
+            <div className="row">
+              <label>Тип
+                <select name="kind" defaultValue="supplement" style={{ width: "100%" }}>
+                  <option value="supplement">Добавка</option>
+                  <option value="bac">БАД</option>
+                  <option value="course">Курс ААС</option>
+                </select>
+              </label>
+              <label style={{ flex: 2 }}>Название
+                <input name="name" required maxLength={100} placeholder="Например: витамин D3" style={{ width: "100%" }} />
+              </label>
+              <label style={{ flex: 2 }}>Дозировка
+                <input name="dosage" maxLength={100} placeholder="Например: 5000 МЕ/день" style={{ width: "100%" }} />
+              </label>
+            </div>
+            <div className="row">
+              <label>Начало
+                <input name="start_date" type="date" />
+              </label>
+              <label>Окончание
+                <input name="end_date" type="date" />
+              </label>
+              <label style={{ flex: 1 }}>Заметка
+                <input name="note" maxLength={300} placeholder="Необязательно" style={{ width: "100%" }} />
+              </label>
+              <button style={{ alignSelf: "flex-end" }}>Добавить</button>
+            </div>
+          </form>
+        )}
+        {supplements.length === 0 && <p className="muted">Пока ничего не добавлено</p>}
+        {supplements.length > 0 && (
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Тип</th><th>Название</th><th>Дозировка</th><th>Период</th><th>Заметка</th>
+                  {canEdit && <th></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {supplements.map((s) => {
+                  const period = s.start_date || s.end_date
+                    ? `${s.start_date ? String(s.start_date) : "…"} → ${s.end_date ? String(s.end_date) : "тек."}`
+                    : "—";
+                  return (
+                    <tr key={String(s.id)}>
+                      <td>{KINDS[String(s.kind)] ?? String(s.kind)}</td>
+                      <td><b>{String(s.name)}</b></td>
+                      <td>{s.dosage ? String(s.dosage) : "—"}</td>
+                      <td>{period}</td>
+                      <td>{s.note ? String(s.note) : "—"}</td>
+                      {canEdit && (
+                        <td>
+                          <form action={deleteSupplement}>
+                            <input type="hidden" name="id" value={String(s.id)} />
+                            <button className="sm danger">✕</button>
+                          </form>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="card">
         <h3>История по дням</h3>

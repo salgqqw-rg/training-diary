@@ -112,6 +112,7 @@ export default async function ClientsPage({
               {c.status === "active" && (
                 <>
                   <span className="muted">связь активна</span>
+                  <Link href={`/goals?user=${c.side?.id}`} className="sm-link">Цели</Link>
                   <Link href={`/daily?user=${c.side?.id}`} className="sm-link">Питание и сон</Link>
                   <Link href={`/measurements?user=${c.side?.id}`} className="sm-link">Замеры</Link>
                 </>
