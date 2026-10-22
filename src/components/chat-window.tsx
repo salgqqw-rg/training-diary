@@ -24,6 +24,14 @@ export function ChatWindow({
   const [fileName, setFileName] = useState<string | null>(null);
   const busy = useRef(false); // синхронный guard: серверный action не выполнится дважды
   const formRef = useRef<HTMLFormElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true); // автоскролл только если пользователь и был внизу
+
+  function onScroll() {
+    const box = boxRef.current;
+    if (!box) return;
+    stickToBottom.current = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+  }
 
   const refresh = useCallback(async () => {
     const fresh = await fetchMessages(partnerId);
@@ -33,14 +41,15 @@ export function ChatWindow({
   // Входящие обновляются сами, пока открыт диалог
   useEffect(() => {
     setMsgs(uniq(initial));
+    stickToBottom.current = true;
     refresh();
     const timer = setInterval(refresh, 2500);
     return () => clearInterval(timer);
   }, [refresh, initial]);
 
   useEffect(() => {
-    const box = document.getElementById("chat-msgs");
-    if (box) box.scrollTop = box.scrollHeight;
+    const box = boxRef.current;
+    if (box && stickToBottom.current) box.scrollTop = box.scrollHeight;
   }, [msgs]);
 
   async function handleSend(fd: FormData) {
@@ -62,7 +71,7 @@ export function ChatWindow({
 
   return (
     <div className="chat-main">
-      <div className="chat-msgs" id="chat-msgs">
+      <div className="chat-msgs" ref={boxRef} onScroll={onScroll}>
         {msgs.length === 0 && (
           <p className="muted">Сообщений нет — напишите первым</p>
         )}

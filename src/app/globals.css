@@ -39,7 +39,11 @@ td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }
 .chat-wrap { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
 .chat-contacts { min-width: 210px; max-width: 280px; flex: 1; }
 .chat-main { flex: 3; min-width: 280px; display: flex; flex-direction: column; }
-.chat-msgs { border: 1px solid var(--line); border-radius: 12px; padding: 10px; height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+.chat-msgs { border: 1px solid var(--line); border-radius: 12px; padding: 10px; height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: var(--bg); scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.chat-msgs::-webkit-scrollbar { width: 7px; }
+.chat-msgs::-webkit-scrollbar-track { background: transparent; }
+.chat-msgs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+.chat-msgs::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .msg { max-width: 80%; padding: 6px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); align-self: flex-start; word-break: break-word; }
 .msg.me { align-self: flex-end; background: var(--acc); color: #fff; border-color: var(--acc); }
 .msg time { font-size: 11px; opacity: .75; display: block; margin-top: 2px; }
