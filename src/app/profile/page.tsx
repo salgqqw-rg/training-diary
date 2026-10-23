@@ -46,10 +46,17 @@ export default async function ProfilePage({
             Имя
             <input name="name" defaultValue={name} placeholder="Как вас видят другие" style={{ width: "100%" }} />
           </label>
-          <label>
-            Фото (до 5 МБ)
-            <input name="avatar" type="file" accept="image/*" style={{ display: "block", marginTop: 4 }} />
+          <label className="file-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+              <path d="M12 3v13" />
+              <path d="m7 10 5 5 5-5" />
+            </svg>
+            Выбрать фото
+            <input name="avatar" type="file" accept="image/*" />
           </label>
+          <p className="muted" style={{ fontSize: 12, margin: "5px 0 10px" }}>До 5 МБ</p>
           <button className="primary">Сохранить</button>
         </form>
       </div>

@@ -228,3 +228,59 @@ label input { margin-top: 5px; width: 100%; }
   background: linear-gradient(135deg, var(--acc), var(--acc-2)); color: #fff; border-radius: 999px;
   padding: 1px 8px; font-size: 12px; font-weight: 700; min-width: 20px; text-align: center;
 }
+
+/* Ответы на сообщения */
+.msg-row { display: flex; align-items: flex-end; gap: 6px; }
+.msg-row.me { flex-direction: row-reverse; }
+.reply-btn {
+  flex-shrink: 0; width: 28px; height: 28px; padding: 4px;
+  border-radius: 9px; border: 1px solid transparent; background: transparent;
+  color: var(--muted); opacity: 0; transition: opacity .12s, border-color .15s, color .15s;
+  text-transform: none; font-weight: 400; letter-spacing: normal;
+}
+.msg-row:hover .reply-btn { opacity: 1; }
+.reply-btn:hover { border-color: var(--line); background: var(--card2); color: var(--acc-soft); }
+.quote {
+  border-left: 2px solid var(--acc-2);
+  background: rgba(124, 58, 237, .14);
+  padding: 4px 9px; border-radius: 7px; font-size: 12.5px; margin-bottom: 5px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.quote b { font-size: 11.5px; color: var(--acc-soft); }
+.quote span { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .9; }
+.reply-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(124, 58, 237, .12); border: 1px solid rgba(168, 85, 247, .3);
+  padding: 6px 10px; border-radius: 10px; font-size: 13px; margin-top: 6px;
+}
+.reply-chip .qtext { font-weight: 600; }
+.reply-chip button {
+  margin-left: auto; padding: 2px 8px; border: none; background: none;
+  color: var(--muted); text-transform: none; font-weight: 400; letter-spacing: normal;
+}
+.reply-chip button:hover { color: #fff; background: none; border: none; }
+
+/* ============ Красивые нативные контролы ============ */
+select {
+  font: inherit; padding: 10px 36px 10px 13px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card2)
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a855f7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>")
+    no-repeat right 12px center / 12px auto;
+  color: var(--text); appearance: none; cursor: pointer; min-width: 0;
+  transition: border-color .15s, box-shadow .15s;
+}
+select:hover { border-color: #3f3f4a; }
+select:focus { outline: none; border-color: var(--acc-2); box-shadow: 0 0 0 3px rgba(124, 58, 237, .25); }
+select option { background: #17171c; color: var(--text); }
+
+input[type="file"] { display: none; }
+.file-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 10px 16px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card); color: var(--text); cursor: pointer;
+  font-size: 14px; font-weight: 600; width: fit-content;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.file-btn:hover { border-color: var(--acc-2); color: #fff; background: var(--card2); }
+.file-btn svg { display: block; }

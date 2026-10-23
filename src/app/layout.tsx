@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="topbar">
           <Link href="/" className="logo">IRONLOG</Link>
           <nav>
-            <Link href="/">Кабинет</Link>
+            <Link href="/">Тренировочные планы</Link>
             <Link href="/goals">Цели</Link>
             <Link href="/daily">Питание и сон</Link>
             <Link href="/measurements">Характеристики</Link>

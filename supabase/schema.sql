@@ -143,6 +143,7 @@ create table messages (
   body text check ((body is not null and char_length(body) between 1 and 2000) or image_path is not null),
   image_path text,
   image_url text,
+  reply_to uuid references messages(id) on delete set null,
   created_at timestamptz not null default now(),
   read_at timestamptz,
   check (sender_id <> recipient_id)

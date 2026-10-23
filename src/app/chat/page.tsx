@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fetchMessages, type ChatMessage } from "@/lib/chat-actions";
+import { fetchMessages, type ChatMessage, type Quote } from "@/lib/chat-actions";
 import { ChatWindow } from "@/components/chat-window";
 
 type Contact = { id: string; display_name: string; unread: number };
@@ -29,7 +29,6 @@ export default async function ChatPage({
       .eq("trainee_id", user.id)
       .eq("status", "active"),
   ]);
-
   const contacts = new Map<string, Contact>();
   for (const l of (asCoach ?? []) as { trainee: { id: string; display_name: string } | { id: string; display_name: string }[] | null }[]) {
     const t = Array.isArray(l.trainee) ? l.trainee[0] : l.trainee;
@@ -52,11 +51,14 @@ export default async function ChatPage({
   }
 
   let initial: ChatMessage[] = [];
+  let quotes: Record<string, Quote> = {};
   let partner: { id: string; display_name: string } | null = null;
 
   if (partnerParam && contacts.has(partnerParam)) {
     partner = contacts.get(partnerParam)!;
-    initial = await fetchMessages(partnerParam);
+    const res = await fetchMessages(partnerParam);
+    initial = res.msgs;
+    quotes = res.quotes;
   }
 
   const contactList = [...contacts.values()].sort((a, b) => a.display_name.localeCompare(b.display_name));
@@ -85,7 +87,14 @@ export default async function ChatPage({
         </div>
 
         {partner ? (
-          <ChatWindow key={partner.id} partnerId={partner.id} meId={user.id} initial={initial} />
+          <ChatWindow
+            key={partner.id}
+            partnerId={partner.id}
+            partnerName={partner.display_name}
+            meId={user.id}
+            initial={initial}
+            quotes={quotes}
+          />
         ) : (
           <div className="chat-main card">
             <p className="muted">Выберите собеседника слева, чтобы начать переписку.</p>
