@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCycle, deleteCycle, togglePublic } from "@/lib/actions";
-import { signOut } from "@/lib/auth-actions";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -17,10 +16,7 @@ export default async function Dashboard() {
 
   return (
     <>
-      <div className="row between">
-        <h1>Мои циклы</h1>
-        <form action={signOut}><button className="sm">Выйти</button></form>
-      </div>
+      <h1>Мои циклы</h1>
 
       <div className="card">
         <h3>Новый цикл</h3>

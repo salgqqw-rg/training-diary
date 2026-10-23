@@ -1,69 +1,77 @@
 import "./globals.css";
 import Link from "next/link";
-import { Manrope, Unbounded } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/lib/auth-actions";
+import { NavLink } from "@/components/nav-link";
 
-// Шрифты: Manrope для текста и заголовков (сборно-геометрический, как в фитнес-макетах),
-// Unbounded для логотипа IRONLOG.
+// Стильный геометрический шрифт приложения
 const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-manrope",
   display: "swap",
 });
-const unbounded = Unbounded({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "700", "900"],
-  variable: "--font-unbounded",
-  display: "swap",
-});
 
 export const metadata = { title: "IRONLOG" };
+
+// Логотип IRON + LOG (как в макете: белая + зелёная наклонная часть)
+function Logo({ small }: { small?: boolean }) {
+  return (
+    <Link href="/" className={small ? "logo sm" : "logo"}>
+      IRON<span>LOG</span>
+    </Link>
+  );
+}
+
+const NAV = [
+  { href: "/", label: "Тренировочные планы" },
+  { href: "/goals", label: "Цели" },
+  { href: "/daily", label: "Питание и сон" },
+  { href: "/measurements", label: "Характеристики" },
+  { href: "/clients", label: "Подопечные" },
+  { href: "/chat", label: "Сообщения" },
+  { href: "/feed", label: "Лента" },
+  { href: "/profile", label: "Профиль" },
+];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Неавторизованным показываем только название, без навигации
+  // Неавторизованным показываем только шапку с логотипом, без навигации
   if (!user) {
     return (
-      <html lang="ru" className={`${manrope.variable} ${unbounded.variable}`}>
+      <html lang="ru" className={manrope.variable}>
         <body>
-          <header className="topbar"><span className="logo">IRONLOG</span></header>
-          <main>{children}</main>
+          <div className="shell">
+            <aside className="side guest">
+              <Logo />
+            </aside>
+            <main>{children}</main>
+          </div>
         </body>
       </html>
     );
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, avatar_url")
-    .eq("id", user.id)
-    .maybeSingle();
-  const avatar = profile?.avatar_url ?? null;
-  const name = profile?.display_name ?? "";
-
   return (
-    <html lang="ru" className={`${manrope.variable} ${unbounded.variable}`}>
+    <html lang="ru" className={manrope.variable}>
       <body>
-        <header className="topbar">
-          <Link href="/" className="logo">IRONLOG</Link>
-          <nav>
-            <Link href="/">Тренировочные планы</Link>
-            <Link href="/goals">Цели</Link>
-            <Link href="/daily">Питание и сон</Link>
-            <Link href="/measurements">Характеристики</Link>
-            <Link href="/clients">Подопечные</Link>
-            <Link href="/chat">Сообщения</Link>
-            <Link href="/feed">Лента</Link>
-            <Link href="/profile">Профиль</Link>
-            {avatar
-              ? <img src={avatar} alt={name} className="avatar sm" />
-              : <span className="avatar sm placeholder">{name.charAt(0).toUpperCase() || "?"}</span>}
-          </nav>
-        </header>
-        <main>{children}</main>
+        <div className="shell">
+          <aside className="side">
+            <Logo small />
+            <nav>
+              {NAV.map((n) => (
+                <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
+              ))}
+            </nav>
+            <form action={signOut} className="side-exit">
+              <button>Выход</button>
+            </form>
+          </aside>
+          <main>{children}</main>
+        </div>
       </body>
     </html>
   );
