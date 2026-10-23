@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfile, changeEmail, changePassword, deleteAccount } from "@/lib/profile-actions";
 import { PasswordInput } from "@/components/password-input";
+import { TargetIcon, FlameIcon, RulerIcon, UsersIcon, ListIcon } from "@/components/icons";
 
 export default async function ProfilePage({
   searchParams,
@@ -36,6 +38,18 @@ export default async function ProfilePage({
         <div>
           <h2 style={{ margin: 0 }}>{name}</h2>
           <p className="muted" style={{ margin: 0 }}>{email}</p>
+        </div>
+      </div>
+
+      {/* Разделы вне нижней таб-панели — только на телефоне */}
+      <div className="card only-m">
+        <h3>Разделы</h3>
+        <div className="more-grid">
+          <Link href="/goals"><TargetIcon />Цели</Link>
+          <Link href="/daily"><FlameIcon />Питание и сон</Link>
+          <Link href="/measurements"><RulerIcon />Характеристики</Link>
+          <Link href="/clients"><UsersIcon />Подопечные</Link>
+          <Link href="/feed"><ListIcon />Лента</Link>
         </div>
       </div>
 

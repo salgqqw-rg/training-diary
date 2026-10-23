@@ -45,6 +45,15 @@ const NAV_MORE = [
   { href: "/feed", label: "Лента" },
 ];
 
+// Нижняя панель табов — только на телефоне (меньше 980px)
+const NAV_BOTTOM = [
+  { href: "/", label: "Главная" },
+  { href: "/diary", label: "Дневник" },
+  { href: "/progress", label: "Прогресс" },
+  { href: "/chat", label: "Чат" },
+  { href: "/profile", label: "Профиль" },
+];
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -96,6 +105,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </aside>
           <main>{children}</main>
         </div>
+        <nav className="bottom-nav" aria-label="Мобильная навигация">
+          {NAV_BOTTOM.map((n) => (
+            <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
+          ))}
+        </nav>
       </body>
     </html>
   );
