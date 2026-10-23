@@ -13,7 +13,7 @@ export default async function LoginPage({
     <div className="auth-split">
       <section className="auth-hero">
         <Link href="/" className="logo">
-          IRON<span>LOG</span>
+          Solo<span>.</span>
         </Link>
         <h1>Твой прогресс —<br />в твоих руках</h1>
         <ul className="feat">

@@ -12,7 +12,7 @@ export default async function ForgotPasswordPage({
     <div className="auth-solo">
       <div className="auth-center">
         <Link href="/" className="logo">
-          IRON<span>LOG</span>
+          Solo<span>.</span>
         </Link>
         <h2>Восстановить пароль</h2>
         {sent ? (

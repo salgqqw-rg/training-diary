@@ -13,7 +13,7 @@ export default async function RegisterPage({
     <div className="auth-solo">
       <div className="auth-center">
         <Link href="/" className="logo">
-          IRON<span>LOG</span>
+          Solo<span>.</span>
         </Link>
         {error && <p className="danger">{error}</p>}
         <h2>Создай свой аккаунт</h2>

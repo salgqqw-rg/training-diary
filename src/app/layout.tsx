@@ -15,13 +15,13 @@ const manrope = Manrope({
   display: "swap",
 });
 
-export const metadata = { title: "IRONLOG" };
+export const metadata = { title: "Solo." };
 
-// Логотип IRON + LOG (как в макете: белая + зелёная наклонная часть)
+// Логотип Solo. (белое слово + лаймовая точка, как акцент в former IRONLOG)
 function Logo({ small }: { small?: boolean }) {
   return (
     <Link href="/" className={small ? "logo sm" : "logo"}>
-      IRON<span>LOG</span>
+      Solo<span>.</span>
     </Link>
   );
 }
