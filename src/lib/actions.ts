@@ -24,13 +24,13 @@ export async function createCycle(fd: FormData) {
   const weeks = num(fd, "weeks");
   if (!name || !weeks || weeks < 1 || weeks > 52) return;
   await supabase.from("cycles").insert({ user_id: user.id, name, weeks_count: weeks });
-  revalidatePath("/");
+  revalidatePath("/diary");
 }
 
 export async function deleteCycle(fd: FormData) {
   const { supabase } = await requireUser();
   await supabase.from("cycles").delete().eq("id", str(fd, "id"));
-  revalidatePath("/");
+  revalidatePath("/diary");
 }
 
 export async function togglePublic(fd: FormData) {
@@ -38,7 +38,7 @@ export async function togglePublic(fd: FormData) {
   const id = str(fd, "id");
   const current = str(fd, "is_public") === "true";
   await supabase.from("cycles").update({ is_public: !current }).eq("id", id);
-  revalidatePath("/");
+  revalidatePath("/diary");
   revalidatePath("/feed");
   revalidatePath(`/cycles/${id}`);
 }

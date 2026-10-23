@@ -54,6 +54,58 @@ export const BoltIcon = (p: P) => (
   <S {...p}><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8" /></S>
 );
 
+export const HomeIcon = (p: P) => (
+  <S {...p}><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /></S>
+);
+
+export const BookIcon = (p: P) => (
+  <S {...p}><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 0-2 2z" /><path d="M4 19a2 2 0 0 1 2-2h13" /></S>
+);
+
+export const DumbbellIcon = (p: P) => (
+  <S {...p}><path d="M3 9v6M6.5 7.5v9M17.5 7.5v9M21 9v6M6.5 12h11" /></S>
+);
+
+export const TrendIcon = (p: P) => (
+  <S {...p}><path d="m3 17 6-6 4 4 8-8" /><path d="M15 7h6v6" /></S>
+);
+
+export const BarsIcon = (p: P) => (
+  <S {...p}><path d="M8 20V10M13 20V4M18 20v-7" /></S>
+);
+
+export const TargetIcon = (p: P) => (
+  <S {...p}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /></S>
+);
+
+export const FlameIcon = (p: P) => (
+  <S {...p}><path d="M12 2s5 4.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-5 .5 1.6 1.7 2.5 3 2.5-.5-2.5.5-5.5 0-7.5Z" /></S>
+);
+
+export const RulerIcon = (p: P) => (
+  <S {...p}><rect x="3" y="9" width="18" height="6" rx="2" /><path d="M7 9v3M11 9v3M15 9v3" /></S>
+);
+
+export const UsersIcon = (p: P) => (
+  <S {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1-3.2 3.9-4.4 6.5-4.4s5.5 1.2 6.5 4.4" /><path d="M16 11.2A3 3 0 1 0 16 5" /><path d="M17.8 15.5c2 .5 3.3 1.8 3.7 4.5" /></S>
+);
+
+export const MessageIcon = (p: P) => (
+  <S {...p}><path d="M21 15a4 4 0 0 1-4 4H8l-4 3V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z" /></S>
+);
+
+export const ListIcon = (p: P) => (
+  <S {...p}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M7 9h10M7 13h10M7 17h6" /></S>
+);
+
+export const LogoutIcon = (p: P) => (
+  <S {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></S>
+);
+
+export const ChevronIcon = (p: P) => (
+  <S {...p}><path d="m9 6 6 6-6 6" /></S>
+);
+
 // Логотип Google (фирменные 4 цвета)
 export const GoogleIcon = (p: P) => (
   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" {...p}>

@@ -5,6 +5,7 @@ import { Manrope } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/auth-actions";
 import { NavLink } from "@/components/nav-link";
+import { LogoutIcon } from "@/components/icons";
 
 // Стильный геометрический шрифт приложения
 const manrope = Manrope({
@@ -25,15 +26,23 @@ function Logo({ small }: { small?: boolean }) {
   );
 }
 
-const NAV = [
-  { href: "/", label: "Тренировочные планы" },
+const NAV_MAIN = [
+  { href: "/", label: "Главная" },
+  { href: "/diary", label: "Дневник" },
+  { href: "/exercises", label: "Упражнения" },
+  { href: "/progress", label: "Прогресс" },
+  { href: "/stats", label: "Статистика" },
+  { href: "/profile", label: "Профиль" },
+];
+
+// Доп. разделы (под разделителем — как «второй блок» сайдбара)
+const NAV_MORE = [
   { href: "/goals", label: "Цели" },
   { href: "/daily", label: "Питание и сон" },
   { href: "/measurements", label: "Характеристики" },
   { href: "/clients", label: "Подопечные" },
   { href: "/chat", label: "Сообщения" },
   { href: "/feed", label: "Лента" },
-  { href: "/profile", label: "Профиль" },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -73,12 +82,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <aside className="side">
             <Logo small />
             <nav>
-              {NAV.map((n) => (
+              {NAV_MAIN.map((n) => (
+                <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
+              ))}
+              <i className="side-div" />
+              {NAV_MORE.map((n) => (
                 <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
               ))}
             </nav>
             <form action={signOut} className="side-exit">
-              <button>Выход</button>
+              <button><LogoutIcon />Выход</button>
             </form>
           </aside>
           <main>{children}</main>
