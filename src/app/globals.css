@@ -156,7 +156,6 @@ main { flex: 1; min-width: 0; padding: 26px 34px 46px; max-width: 1260px; margin
 
 .workout { border-top: 1px solid var(--line); padding: 10px 0; }
 .exercise { margin: 10px 0; }
-.password-field { display: flex; gap: 6px; }
 .password-field input { flex: 1; min-width: 0; }
 
 .avatar { border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
@@ -285,3 +284,87 @@ input[type="file"] { display: none; }
 }
 .file-btn:hover { border-color: var(--acc); color: #fff; background: var(--card2); }
 .file-btn svg { display: block; }
+
+/* ============ Вход / Регистрация — макет IRONLOG ============ */
+
+/* Сплит: герой слева (арт + слоган + фичи), панель входа справа */
+.auth-split { display: grid; grid-template-columns: 1.15fr 520px; min-height: 100vh; }
+.auth-hero {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: 30px;
+  padding: 60px 56px;
+}
+.auth-hero::before { content: ""; position: absolute; inset: 0; background: url("/bg.jpg") center / cover; }
+.auth-hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(4, 5, 4, .9) 0%, rgba(4, 5, 4, .38) 55%, rgba(4, 5, 4, .74) 100%);
+}
+.auth-hero > * { position: relative; z-index: 1; }
+.auth-hero .logo { font-size: 42px; }
+.auth-hero h1 { font-size: 44px; line-height: 1.15; max-width: 430px; margin: 0; letter-spacing: -.02em; }
+.feat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+.feat li { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 15.5px; }
+.feat .ico {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(163, 230, 53, .09); border: 1px solid rgba(163, 230, 53, .4); color: var(--acc);
+}
+.auth-foot { position: absolute; left: 56px; bottom: 42px; z-index: 1; color: var(--muted); font-size: 13.5px; }
+
+.auth-panel {
+  background: #08080a; border-left: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; padding: 44px 30px;
+}
+.auth-card { width: 100%; max-width: 400px; }
+.auth-card h2 { font-size: 24px; margin: 0 0 4px; }
+.auth-card .danger { margin: 0 0 10px; }
+.auth-sub { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+.auth-card .stack { gap: 10px; margin: 0 0 14px; }
+.auth-card button.primary { width: 100%; padding: 12px; font-size: 15px; }
+
+/* Поле с иконкой слева (user/mail/lock) и глазком справа */
+.field { position: relative; }
+.field .p-ico {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none;
+}
+.field input { width: 100%; height: 47px; padding-left: 43px; padding-right: 44px; }
+.eye {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  padding: 8px; background: none; border: none; color: var(--muted);
+}
+.eye:hover { color: #fff; }
+
+/* Чекбокс «Запомнить меня» + «Забыли пароль?» */
+.auth-check-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 2px 0 0; }
+.check {
+  display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600;
+  color: var(--text); cursor: pointer; user-select: none; margin: 0;
+}
+.check input { appearance: auto; width: 17px; height: 17px; accent-color: var(--acc); margin: 0; }
+.auth-footlink { font-size: 13px; }
+
+/* Регистрация: карточка по центру, лаймовое «свечение» снизу */
+.auth-solo {
+  min-height: 100vh; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; padding: 44px 20px;
+}
+.auth-solo::before {
+  content: ""; position: absolute; left: 50%; bottom: -220px; transform: translateX(-50%);
+  width: 1000px; height: 520px; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(163, 230, 53, .13), transparent 62%);
+}
+.auth-center { position: relative; width: 100%; max-width: 430px; text-align: center; }
+.auth-center .logo { font-size: 36px; }
+.auth-center h2 { margin: 14px 0 22px; font-size: 23px; }
+.auth-center .stack { text-align: left; }
+.auth-center .danger { margin: 0 0 4px; }
+.auth-center button.primary { width: 100%; padding: 12px; font-size: 15px; }
+.auth-alt { font-size: 14px; color: var(--muted); text-align: center; margin: 18px 0 0; }
+.auth-alt a { font-weight: 700; }
+
+@media (max-width: 920px) {
+  .auth-split { grid-template-columns: 1fr; }
+  .auth-hero { display: none; }
+  .auth-panel { border-left: none; min-height: 100vh; }
+}

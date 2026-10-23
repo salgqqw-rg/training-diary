@@ -27,13 +27,18 @@ export async function signIn(fd: FormData) {
 }
 
 export async function signUp(fd: FormData) {
+  const password = String(fd.get("password") ?? "");
+  const confirm = String(fd.get("confirm") ?? "");
+  if (confirm && password !== confirm) {
+    redirect("/register?error=" + encodeURIComponent("Пароли не совпадают"));
+  }
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: String(fd.get("email") ?? ""),
-    password: String(fd.get("password") ?? ""),
+    password,
     options: { data: { display_name: String(fd.get("name") ?? "").trim() } },
   });
-  if (error) redirect("/login?error=" + encodeURIComponent(error.message));
+  if (error) redirect("/register?error=" + encodeURIComponent(error.message));
   revalidatePath("/", "layout");
   redirect("/");
 }

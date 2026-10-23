@@ -1,5 +1,6 @@
 import "./globals.css";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Manrope } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/auth-actions";
@@ -39,8 +40,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Неавторизованным показываем только шапку с логотипом, без навигации
+  // Неавторизованным показываем только шапку с логотипом, без навигации.
+  // Экраны входа/регистрации — полноэкранные, без шапки (макет IRONLOG).
   if (!user) {
+    const path = (await headers()).get("x-pathname") ?? "";
+    const bare = path === "/login" || path.startsWith("/register");
+    if (bare) {
+      return (
+        <html lang="ru" className={manrope.variable}>
+          <body>{children}</body>
+        </html>
+      );
+    }
     return (
       <html lang="ru" className={manrope.variable}>
         <body>
