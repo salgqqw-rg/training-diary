@@ -61,3 +61,34 @@ export async function signInWithGoogle() {
   if (error) redirect("/login?error=" + encodeURIComponent("Google не настроен: " + error.message));
   if (data.url) redirect(data.url);
 }
+
+// Восстановление пароля: шлём письмо со ссылкой на форму нового пароля
+export async function resetPassword(fd: FormData) {
+  const supabase = await createClient();
+  const origin = await appOrigin();
+  const email = String(fd.get("email") ?? "").trim();
+  if (email) {
+    // Сообщение об отправке показываем всегда, чтобы не раскрывать, есть ли аккаунт
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/auth/callback?next=/update-password`,
+    });
+  }
+  redirect("/forgot-password?sent=1");
+}
+
+// Смена пароля по ссылке из письма (сессия выдаётся после перехода по ссылке)
+export async function updatePassword(fd: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login?error=" + encodeURIComponent("Ссылка устарела — запроси письмо заново"));
+
+  const password = String(fd.get("password") ?? "");
+  const confirm = String(fd.get("confirm") ?? "");
+  if (password !== confirm) {
+    redirect("/update-password?error=" + encodeURIComponent("Пароли не совпадают"));
+  }
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) redirect("/update-password?error=" + encodeURIComponent(error.message));
+  revalidatePath("/", "layout");
+  redirect("/");
+}

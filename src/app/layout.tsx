@@ -53,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Экраны входа/регистрации — полноэкранные, без шапки (макет IRONLOG).
   if (!user) {
     const path = (await headers()).get("x-pathname") ?? "";
-    const bare = path === "/login" || path.startsWith("/register");
+    const bare = path === "/login" || path === "/forgot-password" || path.startsWith("/register") || path.startsWith("/update-password");
     if (bare) {
       return (
         <html lang="ru" className={manrope.variable}>

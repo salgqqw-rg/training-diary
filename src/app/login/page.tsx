@@ -39,7 +39,7 @@ export default async function LoginPage({
           </form>
           <div className="auth-check-row">
             <label className="check"><input type="checkbox" name="remember" defaultChecked />Запомнить меня</label>
-            <a href="#" className="auth-footlink" title="Восстановление пароля скоро появится">Забыли пароль?</a>
+            <a href="/forgot-password" className="auth-footlink">Забыли пароль?</a>
           </div>
           <div className="or"><span>или</span></div>
           <form action={signInWithGoogle}>
