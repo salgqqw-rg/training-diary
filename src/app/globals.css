@@ -40,25 +40,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Декоративный фон: фиолетовые свечения и «волны» по краям, как на арте */
+/* Фоновая арт-сцена: пантера и штанга (сверху затемнение для читаемости) */
 body::before {
   content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
   background:
-    radial-gradient(1000px 560px at 88% 24%, rgba(124, 58, 237, .16), transparent 62%),
-    radial-gradient(800px 480px at 4% 78%, rgba(88, 28, 135, .18), transparent 62%),
-    radial-gradient(620px 340px at 46% 118%, rgba(124, 58, 237, .12), transparent 72%),
-    linear-gradient(115deg, transparent 42%, rgba(124, 58, 237, .05) 50%, transparent 58%);
-}
-
-/* Короны-орнаменты по сторонам */
-body::after {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
-  background:
-    url("/crown.svg") no-repeat 4% 22% / 110px,
-    url("/crown.svg") no-repeat 96.5% 30% / 84px;
-}
-@media (max-width: 900px) {
-  body::after { opacity: .22; background: url("/crown.svg") no-repeat 90% 3% / 64px; }
+    linear-gradient(180deg, rgba(0, 0, 0, .82) 0%, rgba(0, 0, 0, .30) 26%, rgba(0, 0, 0, .08) 48%, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, .10) 100%),
+    url("/bg.jpg") no-repeat center bottom / cover;
 }
 
 h1, h2, h3 {
