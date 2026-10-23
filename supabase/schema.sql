@@ -70,7 +70,8 @@ create index on progress_photos(user_id, month);
 create table measurements (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
-  month date not null,
+  measured_on date not null,
+  month date not null, -- первый день месяца (для совместимости, заполняется автоматически)
   weight numeric(6,2),
   height numeric(6,2),
   bicep_l numeric(6,2),
@@ -83,7 +84,7 @@ create table measurements (
   calf_l numeric(6,2),
   calf_r numeric(6,2),
   created_at timestamptz not null default now(),
-  unique (user_id, month)
+  unique (user_id, measured_on)
 );
 
 create table progress_photos (

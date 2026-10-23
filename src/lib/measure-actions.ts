@@ -23,15 +23,16 @@ const NUMERIC_FIELDS = [
   "waist", "calf_l", "calf_r",
 ] as const;
 
-// Сохранить замеры месяца: повторный ввод за тот же месяц обновит запись
+// Сохранить замеры на дату: повторный ввод за ту же дату обновит запись
 export async function saveMeasurement(fd: FormData) {
   const { supabase, user } = await requireUser();
-  const month = String(fd.get("month") ?? "").trim();
-  if (!/^\d{4}-\d{2}$/.test(month)) goto("error", "Выберите месяц");
+  const day = String(fd.get("date") ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) goto("error", "Выберите дату");
 
   const record: Record<string, string | number | null> = {
     user_id: user.id,
-    month: `${month}-01`, // первое число месяца
+    measured_on: day,
+    month: `${day.slice(0, 7)}-01`, // для совместимости (фото форм и история)
   };
   for (const f of NUMERIC_FIELDS) {
     const raw = String(fd.get(f) ?? "").trim().replace(",", ".");
@@ -43,11 +44,12 @@ export async function saveMeasurement(fd: FormData) {
 
   const { error } = await supabase
     .from("measurements")
-    .upsert(record, { onConflict: "user_id,month" });
+    .upsert(record, { onConflict: "user_id,measured_on" });
   if (error) goto("error", "Не удалось сохранить замеры: " + error.message);
 
   revalidatePath("/measurements");
-  goto("ok", `Замеры за ${month} сохранены`);
+  const d = new Date(`${day}T00:00:00Z`).toLocaleString("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" });
+  goto("ok", `Замеры за ${d} сохранены`);
 }
 
 export async function deleteMeasurement(fd: FormData) {
