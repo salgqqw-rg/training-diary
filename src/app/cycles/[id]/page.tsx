@@ -132,38 +132,47 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                   )}
 
                   {canEdit && (
-                    <form action={addSet} className="row">
-                      <input type="hidden" name="cycle_id" value={id} />
-                      <input type="hidden" name="exercise_id" value={ex.id} />
-                      <input name="weight" type="number" step="0.5" placeholder="Вес" style={{ width: 90 }} />
-                      <input name="reps" type="number" placeholder="Повт." style={{ width: 80 }} />
-                      <input name="rir" type="number" min={0} max={10} placeholder="RIR" style={{ width: 70 }} />
-                      <input name="rpe" type="number" step="0.5" min={1} max={10} placeholder="RPE" style={{ width: 70 }} />
-                      <button className="sm">+ подход</button>
-                    </form>
+                    <details className="addrow">
+                      <summary>+ подход</summary>
+                      <form action={addSet} className="row">
+                        <input type="hidden" name="cycle_id" value={id} />
+                        <input type="hidden" name="exercise_id" value={ex.id} />
+                        <input name="weight" type="number" step="0.5" placeholder="Вес" style={{ width: 90 }} />
+                        <input name="reps" type="number" placeholder="Повт." style={{ width: 80 }} />
+                        <input name="rir" type="number" min={0} max={10} placeholder="RIR" style={{ width: 70 }} />
+                        <input name="rpe" type="number" step="0.5" min={1} max={10} placeholder="RPE" style={{ width: 70 }} />
+                        <button className="sm primary">Добавить</button>
+                      </form>
+                    </details>
                   )}
                 </div>
               ))}
 
               {canEdit && (
-                <form action={addExercise} className="row">
-                  <input type="hidden" name="cycle_id" value={id} />
-                  <input type="hidden" name="workout_id" value={wo.id} />
-                  <input name="name" list="names" required placeholder="Упражнение" style={{ flex: 1 }} />
-                  <button className="sm">+ упражнение</button>
-                </form>
+                <details className="addrow">
+                  <summary>+ упражнение</summary>
+                  <form action={addExercise} className="row">
+                    <input type="hidden" name="cycle_id" value={id} />
+                    <input type="hidden" name="workout_id" value={wo.id} />
+                    <input name="name" list="names" required placeholder="Название упражнения" style={{ flex: 1 }} />
+                    <button className="sm primary">Добавить</button>
+                  </form>
+                </details>
               )}
             </div>
           ))}
 
           {canEdit && (
-            <form action={addWorkout} className="row" style={{ marginTop: 10 }}>
-              <input type="hidden" name="cycle_id" value={id} />
-              <input type="hidden" name="week" value={week} />
-              <input name="date" type="date" />
-              <input name="note" placeholder="Заметка, например «грудь + трицепс»" style={{ flex: 1 }} />
-              <button className="sm primary">+ тренировка</button>
-            </form>
+            <details className="addrow" style={{ marginTop: 10 }}>
+              <summary>+ тренировка</summary>
+              <form action={addWorkout} className="row">
+                <input type="hidden" name="cycle_id" value={id} />
+                <input type="hidden" name="week" value={week} />
+                <input name="date" type="date" />
+                <input name="note" placeholder="Заметка, например «грудь + трицепс»" style={{ flex: 1 }} />
+                <button className="sm primary">Добавить</button>
+              </form>
+            </details>
           )}
         </section>
       ))}

@@ -84,6 +84,17 @@ button.danger { color: var(--danger); }
 button.danger:hover { border-color: var(--danger); }
 button:disabled { opacity: .55; cursor: default; }
 
+/* Раскрывающиеся формы «+ подход / + упражнение / + тренировка» на странице цикла */
+.addrow summary {
+  display: inline-flex; align-items: center; cursor: pointer; list-style: none;
+  padding: 5px 12px; border: 1px solid var(--line); border-radius: 9px;
+  color: var(--muted); font-size: 13px; font-weight: 600;
+}
+.addrow summary::-webkit-details-marker { display: none; }
+.addrow summary:hover { color: var(--acc); border-color: var(--acc); }
+.addrow[open] summary { color: var(--txt); border-color: var(--line); }
+.addrow[open] > form { margin-top: 8px; }
+
 /* Вход через Google (кнопка с логотипом G) */
 button.google { display: flex; width: 100%; justify-content: center; align-items: center; gap: 10px; background: #0f0f12; color: #fff; text-transform: none; font-weight: 600; }
 button.google:hover { border-color: #fff; }
