@@ -14,8 +14,10 @@ async function requireUser() {
 const goto = (key: "error" | "ok", msg: string): never =>
   redirect(`/daily?${key}=${encodeURIComponent(msg)}`);
 
+// КБЖУ за день теперь считаются автоматически из приёмов пищи (food-actions),
+// ручной ввод оставлен только для сна, шагов и заметки
 const NUMERIC_FIELDS = [
-  "sleep_h", "steps", "kcal", "protein_g", "fat_g", "carbs_g",
+  "sleep_h", "steps",
 ] as const;
 
 // Сохранить запись за день: повторный ввод за ту же дату обновит её

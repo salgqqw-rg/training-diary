@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { saveDailyLog, deleteDailyLog, addSupplement, deleteSupplement } from "@/lib/daily-actions";
+import { FoodDay, type MealEntryDTO } from "./food-day";
 
 const FIELDS: { key: string; label: string; step: string }[] = [
   { key: "sleep_h", label: "Сон, ч", step: "0.1" },
@@ -26,7 +27,7 @@ export default async function DailyPage({
 }: {
   searchParams: Promise<{ user?: string; date?: string; error?: string; ok?: string }>;
 }) {
-  const { user: targetParam, date: editDate, error, ok } = await searchParams;
+  const { user: targetParam, date: dateParam, error, ok } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -51,21 +52,23 @@ export default async function DailyPage({
     ? { display_name: null }
     : (await supabase.from("profiles").select("display_name").eq("id", targetId).maybeSingle()).data;
 
-  const { data: rows } = await supabase
-    .from("daily_logs")
-    .select("*")
-    .eq("user_id", targetId)
-    .order("log_date", { ascending: false });
+  const selDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? "") ? (dateParam as string) : today();
 
-  const { data: suppRows } = await supabase
-    .from("supplements")
-    .select("*")
-    .eq("user_id", targetId)
-    .order("created_at", { ascending: false });
+  const [{ data: rows }, { data: mealRows }, { data: suppRows }] = await Promise.all([
+    supabase.from("daily_logs").select("*").eq("user_id", targetId).order("log_date", { ascending: false }),
+    supabase
+      .from("meal_entries")
+      .select("id, meal, name, grams, kcal, protein_g, fat_g, carbs_g")
+      .eq("user_id", targetId)
+      .eq("log_date", selDate)
+      .order("created_at"),
+    supabase.from("supplements").select("*").eq("user_id", targetId).order("created_at", { ascending: false }),
+  ]);
 
   const logs = (rows ?? []) as Record<string, unknown>[];
   const supplements = (suppRows ?? []) as Record<string, unknown>[];
-  const editing = editDate ? logs.find((r) => r.log_date === editDate) : undefined;
+  const entries = (mealRows ?? []) as unknown as MealEntryDTO[];
+  const dayLog = logs.find((r) => r.log_date === selDate);
   const canEdit = isSelf;
 
   return (
@@ -76,41 +79,48 @@ export default async function DailyPage({
       {error && <p className="danger">{error}</p>}
       {ok && <p className="up">{ok}</p>}
 
+      {/* ======== Дневник питания (как в FatSecret) ======== */}
+      <div className="card">
+        <div className="row between" style={{ marginBottom: 10 }}>
+          <h3 style={{ margin: 0 }}>Питание</h3>
+          <form method="get" className="row" style={{ gap: 8 }}>
+            {!isSelf && <input type="hidden" name="user" value={targetId} />}
+            <input type="date" name="date" defaultValue={selDate} style={{ width: 150 }} />
+            <button className="sm">{new Date(selDate).toLocaleDateString("ru-RU", { weekday: "short" })} Показать</button>
+          </form>
+        </div>
+        <FoodDay date={selDate} canEdit={canEdit} entries={entries} />
+      </div>
+
+      {/* ======== Сон, шаги и заметка ======== */}
       {canEdit && (
         <div className="card">
-          <h3>Запись за день</h3>
+          <h3>Сон, шаги и заметка за день</h3>
           <p className="muted" style={{ fontSize: 13 }}>
-            Повторное заполнение за ту же дату обновит запись.
+            Калории и БЖУ считаются автоматически из дневника питания выше. Повторное заполнение обновит запись.
           </p>
           <form action={saveDailyLog}>
             <div className="row">
               <label>Дата
-                <input name="log_date" type="date" required defaultValue={editDate ?? today()} />
+                <input name="log_date" type="date" required defaultValue={selDate} />
               </label>
-              {!editDate && <button className="primary" type="submit">Сохранить</button>}
-              {editDate && <button className="primary" type="submit">Обновить</button>}
+              <label>Сон, ч
+                <input name="sleep_h" type="number" step="0.1" min={0} defaultValue={dayLog ? String(dayLog.sleep_h ?? "") : ""} style={{ width: 110 }} />
+              </label>
+              <label>Шаги
+                <input name="steps" type="number" step="1" min={0} defaultValue={dayLog ? String(dayLog.steps ?? "") : ""} style={{ width: 130 }} />
+              </label>
             </div>
-            <div className="row" style={{ marginTop: 8 }}>
-              {FIELDS.map((f) => (
-                <label key={f.key}>{f.label}
-                  <input
-                    name={f.key}
-                    type="number"
-                    step={f.step}
-                    min={0}
-                    defaultValue={editing ? String(editing[f.key] ?? "") : ""}
-                    style={{ width: 110 }}
-                  />
-                </label>
-              ))}
-            </div>
-            <label style={{ marginTop: 8 }}>Заметка (что ел, самочувствие…)
+            <label style={{ marginTop: 8 }}>Заметка (самочувствие, что-то важное…)
               <input
                 name="note"
-                defaultValue={editing && typeof editing.note === "string" ? editing.note : ""}
+                defaultValue={dayLog && typeof dayLog.note === "string" ? dayLog.note : ""}
                 style={{ width: "100%" }}
               />
             </label>
+            <div style={{ marginTop: 10 }}>
+              <button className="primary">{dayLog ? "Обновить день" : "Сохранить"}</button>
+            </div>
           </form>
         </div>
       )}
@@ -223,6 +233,9 @@ export default async function DailyPage({
             </table>
           </div>
         )}
+        <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>
+          Кликните дату — откроется день: еда из дневника питания, сон, шаги и заметка.
+        </p>
       </div>
     </>
   );

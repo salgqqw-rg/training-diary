@@ -136,6 +136,36 @@ create table goals (
   done_at timestamptz
 );
 
+-- Приёмы пищи: один продукт в конкретный приём за дату (автосумма — в daily_logs)
+create table meal_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  log_date date not null,
+  meal text not null check (meal in ('breakfast', 'lunch', 'dinner', 'snack')),
+  name text not null check (char_length(name) between 1 and 150),
+  grams numeric(7,1) not null default 100 check (grams > 0 and grams <= 10000),
+  kcal numeric(8,1) not null default 0 check (kcal >= 0),
+  protein_g numeric(6,1) not null default 0 check (protein_g >= 0),
+  fat_g numeric(6,1) not null default 0 check (fat_g >= 0),
+  carbs_g numeric(6,1) not null default 0 check (carbs_g >= 0),
+  created_at timestamptz not null default now()
+);
+
+create index on meal_entries(user_id, log_date);
+
+-- Свои сохранённые продукты (значения на 100 г)
+create table user_foods (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 100),
+  kcal numeric(8,1) not null default 0 check (kcal >= 0),
+  protein_g numeric(6,1) not null default 0 check (protein_g >= 0),
+  fat_g numeric(6,1) not null default 0 check (fat_g >= 0),
+  carbs_g numeric(6,1) not null default 0 check (carbs_g >= 0),
+  created_at timestamptz not null default now(),
+  unique (user_id, name)
+);
+
 create table messages (
   id uuid primary key default gen_random_uuid(),
   seq bigint generated always as identity,
@@ -267,6 +297,18 @@ create policy "progress_photos: write own" on progress_photos for all
 create policy "daily_logs: read own or coach" on daily_logs for select
   using (user_id = auth.uid() or has_active_coach(user_id));
 create policy "daily_logs: write own" on daily_logs for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Приёмы пищи: читать свои или тренеру; писать только себе
+create policy "meal_entries: read own or coach" on meal_entries for select
+  using (user_id = auth.uid() or has_active_coach(user_id));
+create policy "meal_entries: write own" on meal_entries for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Свои продукты: только свои
+create policy "user_foods: read own" on user_foods for select
+  using (user_id = auth.uid());
+create policy "user_foods: write own" on user_foods for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- Добавки / БАДы / курсы ААС: читать свои или тренеру; писать только себе
