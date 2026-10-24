@@ -10,10 +10,11 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // RLS отдаёт цикл владельцу, его тренеру (в режиме просмотра) или если цикл публичный
+  // RLS отдаёт цикл владельцу, его тренеру (в режиме просмотра) или если цикл публичный.
+  // Ссылка на profiles названа явно — в cycles теперь дваForeignKey на profiles (user_id и created_by)
   const { data: cycle } = await supabase
     .from("cycles")
-    .select("*, profiles(display_name)")
+    .select("*, owner:profiles!cycles_user_id_fkey(display_name)")
     .eq("id", id)
     .maybeSingle();
   if (!cycle) notFound();
@@ -32,8 +33,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
       .maybeSingle();
     authorName = author?.display_name ?? null;
   }
-  const profiles = Array.isArray(cycle.profiles) ? cycle.profiles : [cycle.profiles];
-  const ownerName = profiles[0]?.display_name ?? null;
+  const ownerName = cycle.owner?.display_name ?? null;
 
   const [{ data: workouts }, { data: exercises }, { data: sets }] = await Promise.all([
     supabase.from("workouts").select("*").eq("cycle_id", id).order("created_at"),
