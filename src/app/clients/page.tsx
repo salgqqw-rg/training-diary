@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { inviteTrainee, respondInvite, removeLink } from "@/lib/coach-actions";
+import { inviteTrainee, respondInvite, removeLink, createTraineeCycle } from "@/lib/coach-actions";
 
 type Side = { id: string; display_name: string; email: string | null };
 type RawLink = { id: string; status: string; trainee?: unknown; coach?: unknown };
@@ -52,7 +52,7 @@ export default async function ClientsPage({
   const { data: traineeCycles } = activeIds.length
     ? await supabase
         .from("cycles")
-        .select("id, name, weeks_count, user_id")
+        .select("id, name, weeks_count, user_id, created_by")
         .in("user_id", activeIds)
         .order("created_at", { ascending: false })
     : { data: null };
@@ -143,18 +143,45 @@ export default async function ClientsPage({
       )}
 
       {activeIds.length > 0 && (
-        <div className="card">
-          <h3>Циклы подопечных</h3>
-          {(traineeCycles ?? []).map((cy) => {
-            const side = traineeById.get(cy.user_id);
-            return (
-              <div key={cy.id} className="row between" style={{ borderBottom: "1px solid var(--line)", padding: "6px 0" }}>
-                <Link href={`/cycles/${cy.id}`}><b>{cy.name}</b></Link>
-                <span className="muted">{side?.display_name} · {cy.weeks_count} нед.</span>
+        <>
+          <div className="card">
+            <h3>Составить план подопечному</h3>
+            <form action={createTraineeCycle} className="stack">
+              <select name="trainee_id" required style={{ maxWidth: 320 }}>
+                {clients
+                  .filter((c) => c.status === "active")
+                  .map((c) => (
+                    <option key={c.id} value={c.side?.id}>{c.side?.display_name}</option>
+                  ))}
+              </select>
+              <div className="row">
+                <input name="name" required placeholder="Например: Массонабор, осень" style={{ flex: 2, minWidth: 200 }} />
+                <input name="weeks" type="number" min={1} max={52} defaultValue={4} style={{ width: 90 }} />
+                <button className="primary">Составить план</button>
               </div>
-            );
-          })}
-        </div>
+            </form>
+            <p className="muted" style={{ fontSize: 13 }}>
+              План сразу появится в дневнике подопечного, а вы сможете наполнять его тренировками и подходами.
+            </p>
+          </div>
+
+          <div className="card">
+            <h3>Циклы подопечных</h3>
+            {(traineeCycles ?? []).map((cy) => {
+              const side = traineeById.get(cy.user_id);
+              return (
+                <div key={cy.id} className="row between" style={{ borderBottom: "1px solid var(--line)", padding: "6px 0" }}>
+                  <Link href={`/cycles/${cy.id}`}>
+                    <b>{cy.name}</b>
+                    {cy.created_by === user.id && <span className="up"> · составлен вами</span>}
+                  </Link>
+                  <span className="muted">{side?.display_name} · {cy.weeks_count} нед.</span>
+                </div>
+              );
+            })}
+            {!traineeCycles?.length && <p className="muted">Циклов у подопечных пока нет</p>}
+          </div>
+        </>
       )}
     </>
   );

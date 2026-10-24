@@ -11,7 +11,7 @@ export default async function DiaryPage() {
 
   const { data: cycles } = await supabase
     .from("cycles")
-    .select("id, name, weeks_count, is_public")
+    .select("id, name, weeks_count, is_public, created_by")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -31,7 +31,10 @@ export default async function DiaryPage() {
       {(cycles ?? []).map((c) => (
         <div key={c.id} className="card row between">
           <Link href={`/cycles/${c.id}`}><b>{c.name}</b></Link>
-          <span className="muted">{c.weeks_count} нед. · {c.is_public ? "публичный" : "приватный"}</span>
+          <span className="muted">
+            {c.created_by && c.created_by !== user.id && <span className="up">от тренера · </span>}
+            {c.weeks_count} нед. · {c.is_public ? "публичный" : "приватный"}
+          </span>
           <div className="row">
             <form action={togglePublic}>
               <input type="hidden" name="id" value={c.id} />

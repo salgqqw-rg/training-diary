@@ -68,3 +68,39 @@ export async function removeLink(fd: FormData) {
   await supabase.from("coach_links").delete().eq("id", String(fd.get("id") ?? ""));
   revalidatePath("/clients");
 }
+
+// Тренер составляет тренировочный план (цикл) подопечному:
+// цикл создаётся с user_id = подопечный, поэтому сразу появляется в его дневнике
+export async function createTraineeCycle(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const traineeId = String(fd.get("trainee_id") ?? "");
+  const name = String(fd.get("name") ?? "").trim();
+  const weeks = Number(fd.get("weeks"));
+
+  if (!traineeId || !name || !weeks || weeks < 1 || weeks > 52) {
+    goto("error", "Укажите подопечного, название и количество недель (1–52)");
+  }
+
+  // Проверяем активную связь: RLS не пропустит чужой цикл, но для понятной ошибки — проверим сами
+  const { data: link } = await supabase
+    .from("coach_links")
+    .select("id")
+    .eq("coach_id", user.id)
+    .eq("trainee_id", traineeId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!link) goto("error", "Активная связь с этим подопечным не найдена");
+
+  const { data: created, error } = await supabase
+    .from("cycles")
+    .insert({ user_id: traineeId, created_by: user.id, name, weeks_count: weeks })
+    .select("id")
+    .single();
+
+  if (created) {
+    revalidatePath("/clients");
+    revalidatePath("/diary");
+    redirect(`/cycles/${created.id}`);
+  }
+  goto("error", "Не удалось создать план — попробуйте ещё раз");
+}

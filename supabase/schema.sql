@@ -12,6 +12,7 @@ create unique index profiles_email_idx on profiles (lower(email)) where email is
 create table cycles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
+  created_by uuid references profiles(id) on delete set null, -- тренер, составивший план
   name text not null check (char_length(name) between 1 and 100),
   weeks_count int not null check (weeks_count between 1 and 52),
   is_public boolean not null default false,
@@ -180,6 +181,23 @@ language sql stable security definer set search_path = public as $$
   );
 $$;
 
+-- Право содержимого цикла: владелец, автор-тренер или тренер с активной связью
+create or replace function can_edit_cycle(cid uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from cycles c
+    where c.id = cid
+      and (
+        c.user_id = auth.uid()
+        or c.created_by = auth.uid()
+        or exists (
+          select 1 from coach_links l
+          where l.coach_id = auth.uid() and l.trainee_id = c.user_id and l.status = 'active'
+        )
+      )
+  );
+$$;
+
 alter table profiles enable row level security;
 alter table cycles enable row level security;
 alter table workouts enable row level security;
@@ -197,24 +215,30 @@ alter table messages enable row level security;
 create policy "profiles: read all" on profiles for select using (true);
 create policy "profiles: update own" on profiles for update using (id = auth.uid());
 
--- Циклы: читать свои, публичные и подопечных; писать только свои
+-- Циклы: читать свои, публичные и подопечных; создавать себе или подопечному;
+-- менять — владельцу или тренеру-автору
 create policy "cycles: read own, public or coach" on cycles for select
   using (user_id = auth.uid() or is_public or has_active_coach(user_id));
-create policy "cycles: write own" on cycles for all
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "cycles: insert own or trainee" on cycles for insert
+  with check (user_id = auth.uid() or has_active_coach(user_id));
+create policy "cycles: update own or author" on cycles for update
+  using (user_id = auth.uid() or created_by = auth.uid())
+  with check (user_id = auth.uid() or created_by = auth.uid());
+create policy "cycles: delete own or author" on cycles for delete
+  using (user_id = auth.uid() or created_by = auth.uid());
 
 -- Всё внутри цикла следует правилам самого цикла
 create policy "workouts: read" on workouts for select using (can_read_cycle(cycle_id));
-create policy "workouts: write own" on workouts for all
-  using (owns_cycle(cycle_id)) with check (owns_cycle(cycle_id));
+create policy "workouts: write" on workouts for all
+  using (can_edit_cycle(cycle_id)) with check (can_edit_cycle(cycle_id));
 
 create policy "exercises: read" on exercises for select using (can_read_cycle(cycle_id));
-create policy "exercises: write own" on exercises for all
-  using (owns_cycle(cycle_id)) with check (owns_cycle(cycle_id));
+create policy "exercises: write" on exercises for all
+  using (can_edit_cycle(cycle_id)) with check (can_edit_cycle(cycle_id));
 
 create policy "sets: read" on workout_sets for select using (can_read_cycle(cycle_id));
-create policy "sets: write own" on workout_sets for all
-  using (owns_cycle(cycle_id)) with check (owns_cycle(cycle_id));
+create policy "sets: write" on workout_sets for all
+  using (can_edit_cycle(cycle_id)) with check (can_edit_cycle(cycle_id));
 
 -- Связь «тренер — подопечный»: заявка от тренера, подтверждение подопечным
 create policy "coach_links: read own side" on coach_links for select

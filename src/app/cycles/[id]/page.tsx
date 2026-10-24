@@ -18,6 +18,20 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
     .maybeSingle();
   if (!cycle) notFound();
   const isOwner = user?.id === cycle.user_id;
+  const isAuthor = !!user && cycle.created_by === user.id;
+  // Редактировать может владелец, тренер-автор плана или тренер подопечного (права проверит RLS)
+  const canEdit = isOwner || isAuthor;
+
+  // Имя тренера, составившего план (если он не мы)
+  let authorName: string | null = null;
+  if (cycle.created_by && cycle.created_by !== user?.id) {
+    const { data: author } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", cycle.created_by)
+      .maybeSingle();
+    authorName = author?.display_name ?? null;
+  }
   const profiles = Array.isArray(cycle.profiles) ? cycle.profiles : [cycle.profiles];
   const ownerName = profiles[0]?.display_name ?? null;
 
@@ -51,7 +65,9 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
       <p className="muted">
         {cycle.weeks_count} нед. · {cycle.is_public ? "публичный" : "приватный"}
         {!isOwner && ownerName && ` · ${ownerName}`}
-        {!isOwner && " · режим просмотра"}
+        {authorName && ` · план составил ${authorName}`}
+        {isAuthor && !isOwner && " · ваш план для подопечного"}
+        {!canEdit && " · режим просмотра"}
       </p>
       <datalist id="names">
         {names.map((n) => <option key={n} value={n} />)}
@@ -65,7 +81,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
             <div key={wo.id} className="workout">
               <div className="row between">
                 <b>{wo.workout_date ?? "Без даты"} {wo.note}</b>
-                {isOwner && (
+                {canEdit && (
                   <form action={deleteWorkout}>
                     <input type="hidden" name="id" value={wo.id} />
                     <input type="hidden" name="cycle_id" value={id} />
@@ -78,7 +94,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                 <div key={ex.id} className="exercise">
                   <div className="row between">
                     <b>{ex.name}</b>
-                    {isOwner && (
+                    {canEdit && (
                       <form action={deleteExercise}>
                         <input type="hidden" name="id" value={ex.id} />
                         <input type="hidden" name="cycle_id" value={id} />
@@ -101,7 +117,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                             <td>{s.rir ?? "—"}</td>
                             <td>{s.rpe ?? "—"}</td>
                             <td>
-                              {isOwner && (
+                              {canEdit && (
                                 <form action={deleteSet}>
                                   <input type="hidden" name="id" value={s.id} />
                                   <input type="hidden" name="cycle_id" value={id} />
@@ -115,7 +131,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                     </table>
                   )}
 
-                  {isOwner && (
+                  {canEdit && (
                     <form action={addSet} className="row">
                       <input type="hidden" name="cycle_id" value={id} />
                       <input type="hidden" name="exercise_id" value={ex.id} />
@@ -129,7 +145,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                 </div>
               ))}
 
-              {isOwner && (
+              {canEdit && (
                 <form action={addExercise} className="row">
                   <input type="hidden" name="cycle_id" value={id} />
                   <input type="hidden" name="workout_id" value={wo.id} />
@@ -140,7 +156,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
             </div>
           ))}
 
-          {isOwner && (
+          {canEdit && (
             <form action={addWorkout} className="row" style={{ marginTop: 10 }}>
               <input type="hidden" name="cycle_id" value={id} />
               <input type="hidden" name="week" value={week} />
