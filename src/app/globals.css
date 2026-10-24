@@ -461,6 +461,16 @@ input[type="file"] { display: none; }
 .auth-center .logo { font-size: 36px; }
 .auth-center h2 { margin: 14px 0 22px; font-size: 23px; }
 .auth-center .stack { text-align: left; }
+
+/* Экран регистрации: чёткий фирменный фон (фото 1) поверх общего размытого */
+.auth-sharp::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: url("/solo-logo.png") center / cover;
+}
+.auth-sharp::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 6, 7, .58) 0%, rgba(6, 6, 7, .34) 46%, rgba(6, 6, 7, .58) 100%);
+}
 .auth-center .danger { margin: 0 0 4px; }
 .auth-center button.primary { width: 100%; padding: 12px; font-size: 15px; }
 .auth-alt { font-size: 14px; color: var(--muted); text-align: center; margin: 18px 0 0; }

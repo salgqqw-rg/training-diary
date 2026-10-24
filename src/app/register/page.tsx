@@ -10,7 +10,7 @@ export default async function RegisterPage({
 }) {
   const { error } = await searchParams;
   return (
-    <div className="auth-solo">
+    <div className="auth-solo auth-sharp">
       <div className="auth-center">
         <Link href="/" className="logo">
           Solo<span>.</span>
