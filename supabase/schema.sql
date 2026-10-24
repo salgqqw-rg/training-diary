@@ -215,10 +215,10 @@ alter table messages enable row level security;
 create policy "profiles: read all" on profiles for select using (true);
 create policy "profiles: update own" on profiles for update using (id = auth.uid());
 
--- Циклы: читать свои, публичные и подопечных; создавать себе или подопечному;
--- менять — владельцу или тренеру-автору
-create policy "cycles: read own, public or coach" on cycles for select
-  using (user_id = auth.uid() or is_public or has_active_coach(user_id));
+-- Циклы: читать свои, публичные, составленные вами (автором) и подопечных;
+-- создавать себе или подопечному; менять — владельцу или тренеру-автору
+create policy "cycles: read own, public, author or coach" on cycles for select
+  using (user_id = auth.uid() or is_public or created_by = auth.uid() or has_active_coach(user_id));
 create policy "cycles: insert own or trainee" on cycles for insert
   with check (user_id = auth.uid() or has_active_coach(user_id));
 create policy "cycles: update own or author" on cycles for update
