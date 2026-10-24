@@ -68,11 +68,11 @@ export async function addMealEntry(fd: FormData) {
     f100 = f.f100;
     c100 = f.c100;
   } else if (ref.startsWith("uf:")) {
+    // Продукт может быть добавлен любым пользователем — фильтр по user_id не ставим (RLS: чтение всей библиотеки)
     const { data: uf } = await supabase
       .from("user_foods")
       .select("name, kcal, protein_g, fat_g, carbs_g")
       .eq("id", ref.slice(3))
-      .eq("user_id", user.id)
       .maybeSingle();
     if (!uf) return;
     if (!name) name = uf.name;
@@ -96,12 +96,21 @@ export async function addMealEntry(fd: FormData) {
     carbs_g: r1(c100 * k),
   });
 
-  // Галочка «сохранить в свою базу» — значения на 100 г
-  if (String(fd.get("save_custom")) === "1" && !ref.startsWith("uf:") && name.length <= 100) {
-    await supabase.from("user_foods").upsert(
-      { user_id: user.id, name: name.slice(0, 100), kcal: r1(kcal100), protein_g: r1(p100), fat_g: r1(f100), carbs_g: r1(c100) },
-      { onConflict: "user_id,name" },
-    );
+  // Галочка «сохранить в общую библиотеку» — значения на 100 г.
+  // Дубликатов в библиотеке не создаём: если продукт с таким названием уже есть у кого-то — переиспользуем его
+  if (String(fd.get("save_custom")) === "1" && name.length <= 100) {
+    const libName = name.slice(0, 100);
+    const { data: existing } = await supabase
+      .from("user_foods")
+      .select("id")
+      .ilike("name", libName)
+      .limit(1);
+    if (!existing?.length) {
+      await supabase.from("user_foods").upsert(
+        { user_id: user.id, name: libName, kcal: r1(kcal100), protein_g: r1(p100), fat_g: r1(f100), carbs_g: r1(c100) },
+        { onConflict: "user_id,name" },
+      );
+    }
   }
 
   await syncDayLog(supabase, user.id, date);

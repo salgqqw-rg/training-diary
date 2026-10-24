@@ -305,9 +305,8 @@ create policy "meal_entries: read own or coach" on meal_entries for select
 create policy "meal_entries: write own" on meal_entries for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- Свои продукты: только свои
-create policy "user_foods: read own" on user_foods for select
-  using (user_id = auth.uid());
+-- Свои продукты: читать может каждый (общая библиотека), менять — только автор
+create policy "user_foods: read all" on user_foods for select using (true);
 create policy "user_foods: write own" on user_foods for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 

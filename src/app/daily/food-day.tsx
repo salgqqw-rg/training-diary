@@ -123,7 +123,7 @@ export function FoodDay({
               </div>
               <label className="fd-check">
                 <input type="checkbox" name="save_custom" value="1" defaultChecked />
-                <span>сохранить в свою базу продуктов</span>
+                <span>сохранить в общую библиотеку продуктов</span>
               </label>
               <button className="primary" style={{ alignSelf: "flex-start" }}>Добавить</button>
             </form>
