@@ -108,3 +108,47 @@ export async function deleteSet(fd: FormData) {
   await supabase.from("workout_sets").delete().eq("id", str(fd, "id"));
   revalidatePath(`/cycles/${cycleId}`);
 }
+
+// Быстрый ввод серией: «80x8, 82.5x6 @2» — вес x повторения [@RIR].
+// Разбираем строку и записываем все подходы одним действием
+export async function addSetsBulk(fd: FormData) {
+  const { supabase } = await requireUser();
+  const cycleId = str(fd, "cycle_id");
+  const exerciseId = str(fd, "exercise_id");
+  const raw = str(fd, "series");
+  if (!cycleId || !exerciseId) return;
+
+  const tokens = raw.split(/[,;\n]+/).map((t) => t.trim()).filter(Boolean);
+  const rows: {
+    cycle_id: string; exercise_id: string; set_number: number;
+    weight: number; reps: number; rir: number | null; rpe: null;
+  }[] = [];
+
+  const { count } = await supabase
+    .from("workout_sets")
+    .select("id", { count: "exact", head: true })
+    .eq("exercise_id", exerciseId);
+  let n = count ?? 0;
+
+  for (const tok of tokens) {
+    const m = tok.match(/^(\d+(?:[.,]\d+)?)\s*[xX×*]\s*(\d{1,3})(?:\s*@\s*(\d{1,2}))?/);
+    if (!m) continue;
+    const weight = Number(m[1].replace(",", "."));
+    const reps = Number(m[2]);
+    if (!Number.isFinite(weight) || !reps) continue;
+    n += 1;
+    rows.push({
+      cycle_id: cycleId,
+      exercise_id: exerciseId,
+      set_number: n,
+      weight,
+      reps,
+      rir: m[3] !== undefined && m[3] !== "" ? Number(m[3]) : null,
+      rpe: null,
+    });
+  }
+  if (!rows.length) return;
+
+  await supabase.from("workout_sets").insert(rows);
+  revalidatePath(`/cycles/${cycleId}`);
+}

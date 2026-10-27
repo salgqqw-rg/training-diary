@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { buildStats, type SetRow } from "@/lib/stats";
 import {
-  addWorkout, deleteWorkout, addExercise, deleteExercise, addSet, deleteSet,
+  addWorkout, deleteWorkout, addExercise, deleteExercise, addSet, deleteSet, addSetsBulk,
 } from "@/lib/actions";
+import { QuickSets } from "./quick-sets";
 
 export default async function CyclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -132,8 +133,11 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                   )}
 
                   {canEdit && (
+                    <QuickSets cycleId={id} exerciseId={ex.id} />
+                  )}
+                  {canEdit && (
                     <details className="addrow">
-                      <summary>+ подход</summary>
+                      <summary>подробно</summary>
                       <form action={addSet} className="row">
                         <input type="hidden" name="cycle_id" value={id} />
                         <input type="hidden" name="exercise_id" value={ex.id} />
@@ -168,7 +172,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
               <form action={addWorkout} className="row">
                 <input type="hidden" name="cycle_id" value={id} />
                 <input type="hidden" name="week" value={week} />
-                <input name="date" type="date" />
+                <input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} />
                 <input name="note" placeholder="Заметка, например «грудь + трицепс»" style={{ flex: 1 }} />
                 <button className="sm primary">Добавить</button>
               </form>
