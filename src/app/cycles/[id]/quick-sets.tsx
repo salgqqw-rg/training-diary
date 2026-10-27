@@ -46,9 +46,6 @@ export function QuickSets({ cycleId, exerciseId }: { cycleId: string; exerciseId
           {pending ? "Пишу…" : `Записать${parsedCount > 0 ? ` (${parsedCount})` : ""}`}
         </button>
       </form>
-      <p className="muted" style={{ fontSize: 11.5, margin: "4px 0 0" }}>
-        формат: вес x повторения; RIR через @; запятая — новый подход
-      </p>
     </div>
   );
 }

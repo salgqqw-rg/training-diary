@@ -156,7 +156,8 @@ export default async function ClientsPage({
               </select>
               <div className="row">
                 <input name="name" required placeholder="Например: Массонабор, осень" style={{ flex: 2, minWidth: 200 }} />
-                <input name="weeks" type="number" min={1} max={52} defaultValue={4} style={{ width: 90 }} />
+                <input name="weeks" type="number" min={1} max={52} defaultValue={4} style={{ width: 90 }} title="Количество недель" aria-label="Количество недель" />
+                <span className="muted" style={{ alignSelf: "center", fontSize: 13 }}>недель</span>
                 <button className="primary">Составить план</button>
               </div>
             </form>
