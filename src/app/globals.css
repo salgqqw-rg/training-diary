@@ -125,6 +125,10 @@ button:disabled { opacity: .55; cursor: default; }
   .fd-form select { max-width: 96px; }
 }
 
+/* Редактируемые ячейки таблицы подходов */
+.set-in { width: 64px; padding: 6px 8px; font-size: 13px; }
+td .set-in { margin: 2px 0; }
+
 /* Вход через Google (кнопка с логотипом G) */
 button.google { display: flex; width: 100%; justify-content: center; align-items: center; gap: 10px; background: #0f0f12; color: #fff; text-transform: none; font-weight: 600; }
 button.google:hover { border-color: #fff; }

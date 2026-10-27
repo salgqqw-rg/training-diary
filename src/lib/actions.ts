@@ -67,11 +67,30 @@ export async function addExercise(fd: FormData) {
   const cycleId = str(fd, "cycle_id");
   const name = str(fd, "name");
   if (!name) return;
-  await supabase.from("exercises").insert({
-    cycle_id: cycleId,
-    workout_id: str(fd, "workout_id"),
-    name,
-  });
+
+  const { data: ex, error } = await supabase
+    .from("exercises")
+    .insert({ cycle_id: cycleId, workout_id: str(fd, "workout_id"), name })
+    .select("id")
+    .single();
+  if (error || !ex) { revalidatePath(`/cycles/${cycleId}`); return; }
+
+  // Сразу создаём строки подходов: «подходов» × повторов — вес пока 0, заполняется в таблице
+  const setsN = Math.min(Math.max(Number(fd.get("sets")) || 0, 0), 20);
+  const repsN = Math.min(Math.max(Number(fd.get("reps")) || 0, 0), 50);
+  if (setsN > 0) {
+    await supabase.from("workout_sets").insert(
+      Array.from({ length: setsN }, (_, i) => ({
+        cycle_id: cycleId,
+        exercise_id: ex.id,
+        set_number: i + 1,
+        weight: 0,
+        reps: repsN,
+        rir: null,
+        rpe: null,
+      })),
+    );
+  }
   revalidatePath(`/cycles/${cycleId}`);
 }
 
@@ -106,6 +125,36 @@ export async function deleteSet(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
   await supabase.from("workout_sets").delete().eq("id", str(fd, "id"));
+  revalidatePath(`/cycles/${cycleId}`);
+}
+
+// Сохранить изменения подходов прямо из таблицы (вес, повт, RIR, RPE, номер)
+export async function updateSetsBulk(fd: FormData) {
+  const { supabase } = await requireUser();
+  const cycleId = str(fd, "cycle_id");
+  let rows: {
+    id: string; set_number?: number; weight?: number; reps?: number;
+    rir?: number | null; rpe?: number | null;
+  }[] = [];
+  try { rows = JSON.parse(String(fd.get("rows") ?? "[]")); } catch { return; }
+  if (!cycleId || !Array.isArray(rows)) return;
+
+  const clean = (v: unknown) => {
+    const n = typeof v === "string" && v.trim() === "" ? NaN : Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  for (const r of rows) {
+    if (!r?.id) continue;
+    const patch: Record<string, number | null> = {};
+    if (r.set_number !== undefined) patch.set_number = Math.max(1, Math.min(99, Math.round(Number(r.set_number) || 1)));
+    if (r.weight !== undefined) patch.weight = Math.max(0, clean(r.weight) ?? 0);
+    if (r.reps !== undefined) patch.reps = Math.max(0, Math.round(clean(r.reps) ?? 0));
+    if (r.rir !== undefined) { const v = clean(r.rir); patch.rir = v === null ? null : Math.max(0, Math.min(10, v)); }
+    if (r.rpe !== undefined) { const v = clean(r.rpe); patch.rpe = v === null ? null : Math.max(1, Math.min(10, v)); }
+    if (!Object.keys(patch).length) continue;
+    await supabase.from("workout_sets").update(patch).eq("id", String(r.id));
+  }
   revalidatePath(`/cycles/${cycleId}`);
 }
 

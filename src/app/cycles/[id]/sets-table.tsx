@@ -1,0 +1,120 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { deleteSet, updateSetsBulk } from "@/lib/actions";
+
+type Row = {
+  id: string;
+  set_number: number;
+  weight: number;
+  reps: number;
+  rir: number | null;
+  rpe: number | null;
+};
+
+type Local = { id: string; weight: string; reps: string; rir: string; rpe: string };
+
+// Таблица подходов упражнения: строки редактируются на месте,
+// одна кнопка «Сохранить» отправляет все изменения, ✕ удаляет строку
+export function SetsTable({
+  cycleId,
+  exerciseId,
+  rows,
+  canEdit,
+}: {
+  cycleId: string;
+  exerciseId: string;
+  rows: Row[];
+  canEdit: boolean;
+}) {
+  const [local, setLocal] = useState<Local[]>(
+    rows.map((r) => ({
+      id: r.id,
+      weight: String(r.weight ?? ""),
+      reps: String(r.reps ?? ""),
+      rir: r.rir === null || r.rir === undefined ? "" : String(r.rir),
+      rpe: r.rpe === null || r.rpe === undefined ? "" : String(r.rpe),
+    })),
+  );
+  const [pending, start] = useTransition();
+
+  if (!canEdit) {
+    return (
+      <table>
+        <thead>
+          <tr><th>#</th><th>Вес</th><th>Повт.</th><th>RIR</th><th>RPE</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td>{r.set_number}</td>
+              <td>{r.weight}</td>
+              <td>{r.reps}</td>
+              <td>{r.rir ?? "—"}</td>
+              <td>{r.rpe ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  const upd = (id: string, key: keyof Local, v: string) =>
+    setLocal((cur) => cur.map((r) => (r.id === id ? { ...r, [key]: v } : r)));
+
+  const save = () =>
+    start(async () => {
+      const fd = new FormData();
+      fd.set("cycle_id", cycleId);
+      fd.set("rows", JSON.stringify(
+        local.map((r, i) => ({
+          id: r.id,
+          set_number: i + 1,
+          weight: parseFloat(r.weight.replace(",", ".")) || 0,
+          reps: parseInt(r.reps, 10) || 0,
+          rir: r.rir.trim() === "" || isNaN(parseFloat(r.rir)) ? null : parseFloat(r.rir.replace(",", ".")),
+          rpe: r.rpe.trim() === "" || isNaN(parseFloat(r.rpe)) ? null : parseFloat(r.rpe.replace(",", ".")),
+        })),
+      ));
+      await updateSetsBulk(fd);
+    });
+
+  const remove = (id: string) =>
+    start(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      fd.set("cycle_id", cycleId);
+      await deleteSet(fd);
+    });
+
+  const cell = "set-in";
+
+  return (
+    <>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Вес</th><th>Повт.</th><th>RIR</th><th>RPE</th><th></th></tr>
+        </thead>
+        <tbody>
+          {local.map((r, i) => (
+            <tr key={r.id}>
+              <td>{i + 1}</td>
+              <td><input className={cell} type="number" step="0.5" min={0} value={r.weight} disabled={pending} onChange={(e) => upd(r.id, "weight", e.target.value)} aria-label={`Вес, подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="1" min={0} value={r.reps} disabled={pending} onChange={(e) => upd(r.id, "reps", e.target.value)} aria-label={`Повт., подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="1" min={0} max={10} value={r.rir} disabled={pending} placeholder="—" onChange={(e) => upd(r.id, "rir", e.target.value)} aria-label={`RIR, подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="0.5" min={1} max={10} value={r.rpe} disabled={pending} placeholder="—" onChange={(e) => upd(r.id, "rpe", e.target.value)} aria-label={`RPE, подход ${i + 1}`} /></td>
+              <td>
+                <button className="sm danger" disabled={pending} onClick={() => remove(r.id)} aria-label="Удалить подход">✕</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ marginTop: 6 }}>
+        <button className="sm primary" disabled={pending || local.length === 0} onClick={save}>
+          {pending ? "Сохраняю…" : "Сохранить подходы"}
+        </button>
+      </div>
+    </>
+  );
+}

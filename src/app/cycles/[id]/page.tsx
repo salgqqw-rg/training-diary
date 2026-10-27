@@ -2,9 +2,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { buildStats, type SetRow } from "@/lib/stats";
 import {
-  addWorkout, deleteWorkout, addExercise, deleteExercise, addSet, deleteSet, addSetsBulk,
+  addWorkout, deleteWorkout, addExercise, deleteExercise,
 } from "@/lib/actions";
 import { QuickSets } from "./quick-sets";
+import { SetsTable } from "./sets-table";
 
 export default async function CyclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -104,50 +105,29 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                     )}
                   </div>
 
-                  {(sets ?? []).some((s) => s.exercise_id === ex.id) && (
-                    <table>
-                      <thead>
-                        <tr><th>#</th><th>Вес</th><th>Повт.</th><th>RIR</th><th>RPE</th><th></th></tr>
-                      </thead>
-                      <tbody>
-                        {(sets ?? []).filter((s) => s.exercise_id === ex.id).map((s) => (
-                          <tr key={s.id}>
-                            <td>{s.set_number}</td>
-                            <td>{Number(s.weight)}</td>
-                            <td>{s.reps}</td>
-                            <td>{s.rir ?? "—"}</td>
-                            <td>{s.rpe ?? "—"}</td>
-                            <td>
-                              {canEdit && (
-                                <form action={deleteSet}>
-                                  <input type="hidden" name="id" value={s.id} />
-                                  <input type="hidden" name="cycle_id" value={id} />
-                                  <button className="sm danger">✕</button>
-                                </form>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                  {(() => {
+                    const exSets = (sets ?? []).filter((s) => s.exercise_id === ex.id);
+                    if (exSets.length === 0) return null;
+                    return (
+                      <SetsTable
+                        key={`${ex.id}:${exSets.map((s) => s.id).join("-")}`}
+                        cycleId={id}
+                        exerciseId={ex.id}
+                        canEdit={canEdit}
+                        rows={exSets.map((s) => ({
+                          id: s.id,
+                          set_number: s.set_number,
+                          weight: Number(s.weight),
+                          reps: s.reps,
+                          rir: s.rir === null ? null : Number(s.rir),
+                          rpe: s.rpe === null ? null : Number(s.rpe),
+                        }))}
+                      />
+                    );
+                  })()}
 
                   {canEdit && (
                     <QuickSets cycleId={id} exerciseId={ex.id} />
-                  )}
-                  {canEdit && (
-                    <details className="addrow">
-                      <summary>подробно</summary>
-                      <form action={addSet} className="row">
-                        <input type="hidden" name="cycle_id" value={id} />
-                        <input type="hidden" name="exercise_id" value={ex.id} />
-                        <input name="weight" type="number" step="0.5" placeholder="Вес" style={{ width: 90 }} />
-                        <input name="reps" type="number" placeholder="Повт." style={{ width: 80 }} />
-                        <input name="rir" type="number" min={0} max={10} placeholder="RIR" style={{ width: 70 }} />
-                        <input name="rpe" type="number" step="0.5" min={1} max={10} placeholder="RPE" style={{ width: 70 }} />
-                        <button className="sm primary">Добавить</button>
-                      </form>
-                    </details>
                   )}
                 </div>
               ))}
@@ -159,6 +139,10 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
                     <input type="hidden" name="cycle_id" value={id} />
                     <input type="hidden" name="workout_id" value={wo.id} />
                     <input name="name" list="names" required placeholder="Название упражнения" style={{ flex: 1 }} />
+                    <input name="sets" type="number" min={1} max={20} defaultValue={3} style={{ width: 52 }} title="Количество подходов" aria-label="Подходов" />
+                    <span className="muted" style={{ alignSelf: "center", fontSize: 12 }}>подходов ×</span>
+                    <input name="reps" type="number" min={1} max={50} defaultValue={8} style={{ width: 52 }} title="Повторений в подходе" aria-label="Повторений" />
+                    <span className="muted" style={{ alignSelf: "center", fontSize: 12 }}>повт.</span>
                     <button className="sm primary">Добавить</button>
                   </form>
                 </details>
