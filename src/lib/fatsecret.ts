@@ -13,7 +13,7 @@ async function getToken(): Promise<string | null> {
 
   if (tokenCache && tokenCache.exp > Date.now() + 60_000) return tokenCache.token;
 
-  const res = await fetch("https://authentication.fatsecret.com/connect/token", {
+  const res = await fetch("https://oauth.fatsecret.com/connect/token", {
     method: "POST",
     cache: "no-store",
     headers: {
@@ -72,9 +72,10 @@ export async function fatSecretSearch(q: string): Promise<FSItem[] | null> {
   const token = await getToken();
   if (!token) return null;
 
-  const url = new URL("https://platform.fatsecret.com/rest/v2/foods/search");
+  const url = new URL("https://platform.fatsecret.com/rest/foods/search/v1");
   url.searchParams.set("search_expression", q);
   url.searchParams.set("max_results", "12");
+  url.searchParams.set("format", "json");
   const res = await fetch(url, {
     cache: "no-store",
     headers: { Authorization: `Bearer ${token}`, "Accept-Language": "ru-RU" },
@@ -82,6 +83,9 @@ export async function fatSecretSearch(q: string): Promise<FSItem[] | null> {
   if (!res.ok) return null;
 
   const j = (await res.json()) as unknown;
+  // FatSecret отдаёт ошибки (например, код 21 «IP не в белом списке») с HTTP 200:
+  // {"error":{"code":21,"message":...}} — считаем это «API недоступен», откат на локальную базу
+  if (j && typeof j === "object" && "error" in j) return null;
   const root = j as {
     foods_search?: { results?: { food?: unknown } };
     foods?: { food?: unknown };
@@ -133,8 +137,9 @@ export async function fatSecretFood(
   const token = await getToken();
   if (!token) return null;
 
-  const url = new URL("https://platform.fatsecret.com/rest/v2/food");
+  const url = new URL("https://platform.fatsecret.com/rest/food/v1");
   url.searchParams.set("food_id", id);
+  url.searchParams.set("format", "json");
   const res = await fetch(url, {
     cache: "no-store",
     headers: { Authorization: `Bearer ${token}`, "Accept-Language": "ru-RU" },
@@ -142,6 +147,7 @@ export async function fatSecretFood(
   if (!res.ok) return null;
 
   const j = (await res.json()) as unknown;
+  if (j && typeof j === "object" && "error" in j) return null;
   const f = ((j as { food?: unknown }).food ?? j) as {
     food_name?: string;
     brand_name?: string;
