@@ -62,7 +62,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <h1>Привет, {name} 👋</h1>
+      <h1>Привет, {name}</h1>
       <p className="muted" style={{ margin: "-8px 0 18px" }}>Продолжай — ты на правильном пути!</p>
 
       <div className="kpi-grid">
