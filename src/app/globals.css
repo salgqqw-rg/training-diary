@@ -91,7 +91,7 @@ button:disabled { opacity: .55; cursor: default; }
 }
 .addrow summary::-webkit-details-marker { display: none; }
 .addrow summary:hover { color: var(--acc); border-color: var(--acc); }
-.addrow[open] summary { color: var(--txt); border-color: var(--line); }
+.addrow[open] summary { color: var(--text); border-color: var(--line); }
 .addrow[open] > form { margin-top: 8px; }
 
 /* ===== Дневник питания (FatSecret-стиль) ===== */
@@ -586,3 +586,256 @@ input[type="file"] { display: none; }
 .w-bars .b .bar { display: block; width: 100%; background: var(--acc); border-radius: 8px; min-height: 5px; }
 .w-bars .b .lbl { font-size: 12px; color: var(--muted); font-weight: 700; }
 
+/* ============================================================
+   Полировка интерфейса: тренировки, замеры, статистика
+   ============================================================ */
+
+/* Доступность: чёткое кольцо фокуса при навигации с клавиатуры */
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 6px; }
+input:focus-visible, select:focus-visible { outline: none; }
+.addrow summary:focus-visible { outline-offset: 3px; }
+
+/* Кнопки: отклик на нажатие, понятное «недоступно» */
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { cursor: not-allowed; }
+button.danger:hover { background: rgba(251, 113, 133, .08); }
+.addrow summary { transition: color .15s, border-color .15s, background .15s; }
+.addrow summary:hover { background: rgba(163, 230, 53, .06); }
+
+/* Числа ровными колонками */
+table, .kpi .v, .m-chip .v, .fd-t b, .chart-box .v, .m-row .mp { font-variant-numeric: tabular-nums; }
+
+/* Таблицы: аккуратная шапка, подсветка строки, без лишней линии внизу */
+th { text-transform: uppercase; letter-spacing: .07em; font-size: 11px; font-weight: 700; padding-bottom: 6px; }
+tbody tr { transition: background .12s; }
+tbody tr:hover { background: rgba(255, 255, 255, .025); }
+tbody tr:last-child td { border-bottom: none; }
+td .set-in { text-align: center; }
+.set-in { width: 68px; }
+.set-in::-webkit-outer-spin-button, .set-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.set-in { -moz-appearance: textfield; appearance: textfield; }
+
+/* Страница цикла: тренировка и упражнение читаются как вложенные блоки */
+.workout {
+  border: 1px solid var(--line); border-left: 3px solid rgba(163, 230, 53, .55);
+  border-radius: 14px; padding: 12px 14px; margin-top: 12px; background: rgba(255, 255, 255, .012);
+}
+.workout-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.workout-head b { font-size: 15.5px; }
+.workout-head .muted { font-size: 13.5px; font-weight: 600; }
+.exercise {
+  margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--card2);
+}
+.exercise > .row b { font-size: 14.5px; }
+.exercise table { margin: 4px 0; }
+.card > h2 { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.card > h2::before { content: ""; width: 4px; height: 18px; border-radius: 3px; background: var(--acc); flex-shrink: 0; }
+.quick-sets input { background: var(--bg); }
+
+/* Замеры */
+.m-entry > .between b { letter-spacing: -.005em; }
+.m-chip { transition: border-color .15s, transform .15s; }
+.m-chip:hover { border-color: rgba(163, 230, 53, .4); }
+.m-group-label { text-transform: uppercase; letter-spacing: .1em; font-size: 11px; }
+.m-delta { padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, .05); line-height: 1.4; }
+.m-delta.up { background: rgba(163, 230, 53, .12); }
+.m-delta.down { background: rgba(251, 113, 133, .12); }
+.ph-grid img { transition: transform .15s, box-shadow .15s; }
+.ph-grid a:hover img { transform: scale(1.04); box-shadow: 0 6px 22px rgba(0, 0, 0, .5); }
+
+/* Статистика: градиентные полосы, подписи значений, подсветка пика */
+.m-track { height: 12px; background: #0b0b0e; border: 1px solid var(--line); }
+.m-fill {
+  background: linear-gradient(90deg, #7fb82a, var(--acc));
+  box-shadow: 0 0 12px rgba(163, 230, 53, .28);
+  transition: width .5s cubic-bezier(.2, .8, .2, 1);
+}
+.w-bars .b { position: relative; }
+.w-bars .b .bar {
+  background: linear-gradient(180deg, var(--acc-hi), #6fa322);
+  transition: height .5s cubic-bezier(.2, .8, .2, 1), opacity .15s;
+}
+.w-bars .b .bar.zero { background: #23232a; }
+.w-bars .b .bar.peak { box-shadow: 0 0 18px rgba(163, 230, 53, .4); }
+.w-bars .b .val { font-size: 12px; font-weight: 800; color: var(--text); min-height: 16px; }
+.w-bars .b .val:empty { visibility: hidden; }
+.kpi { transition: border-color .15s; }
+.kpi:hover { border-color: rgba(163, 230, 53, .3); }
+.kpi .v { font-size: 26px; }
+
+/* Планшет и телефон: удобные зоны нажатия */
+@media (max-width: 980px) {
+  button.sm { min-height: 36px; padding: 6px 12px; }
+  .addrow summary { min-height: 38px; padding: 8px 14px; }
+  .workout { padding: 10px 10px; border-radius: 12px; }
+  .exercise { padding: 8px 8px; }
+  .card { padding: 14px 14px; border-radius: 14px; }
+  .set-in { width: 58px; }
+  .fd-form { flex-wrap: wrap; }
+  .m-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+}
+
+/* Уважаем настройку «меньше анимации» */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* ============================================================
+   Solo. 2.0 — слой «премиум-полировки» (дописан поверх базовых стилей).
+   Было: плоские карточки, одинаковые заголовки, нет глубины.
+   Стало: стеклянные карточки, лаймовое свечение, спортивные заголовки
+   (Oswald), плавное появление блоков, живые hover-состояния.
+   Откат: design-backup/globals.css.txt
+   ============================================================ */
+
+:root {
+  --font-display: var(--font-oswald), "Arial Narrow", Impact, sans-serif;
+  --glow: 0 0 0 1px rgba(163, 230, 53, .35), 0 8px 34px rgba(163, 230, 53, .16);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, .05);   /* светлая кромка сверху карточки */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --muted: #9a9aa3;                                  /* контраст на тёмном фоне ≥ 6:1 */
+}
+
+html { scroll-behavior: smooth; }
+input::placeholder { color: #74747d; }
+
+/* Мягкое лаймовое свечение в углу — глубина без тяжёлых картинок */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 92% -8%, rgba(163, 230, 53, .10), transparent 60%),
+    radial-gradient(700px 420px at -6% 108%, rgba(163, 230, 53, .06), transparent 60%);
+}
+
+/* ---------- Типографика ---------- */
+main h1, .auth-hero h1, .auth-card h2, .auth-center h2 {
+  font-family: var(--font-display); font-weight: 600; letter-spacing: .01em; text-transform: uppercase;
+}
+main h1 { font-size: 34px; line-height: 1.05; margin: 4px 0 14px; }
+.kpi .v, .chart-box .v { font-family: var(--font-display); font-weight: 600; letter-spacing: .01em; }
+.kpi .v { font-size: 28px; line-height: 1.15; }
+.kpi .t, .kpi .s { letter-spacing: .02em; }
+.kpi .t { text-transform: uppercase; font-size: 11.5px; letter-spacing: .09em; }
+h3 { font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+
+/* ---------- Стеклянные карточки ---------- */
+.card {
+  background: linear-gradient(180deg, rgba(22, 22, 27, .82) 0%, rgba(12, 12, 15, .86) 100%);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, .07); border-radius: 18px;
+  box-shadow: var(--edge), 0 14px 44px rgba(0, 0, 0, .5);
+}
+
+/* KPI: лаймовая «нить» сверху + подъём при наведении */
+.kpi { position: relative; overflow: hidden; transition: border-color .2s, transform .25s var(--ease), box-shadow .25s; }
+.kpi::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, var(--acc), rgba(163, 230, 53, 0) 70%); opacity: .8;
+}
+.kpi:hover { transform: translateY(-3px); border-color: rgba(163, 230, 53, .35); box-shadow: var(--edge), var(--glow); }
+
+/* Интерактивные карточки списков */
+.rec, .ex-card, .m-chip, .w-row { transition: border-color .2s, transform .25s var(--ease), background .2s; }
+.rec:hover, .ex-card:hover { transform: translateY(-2px); background: #1c1c22; }
+.w-row { border-radius: 12px; padding: 11px 10px; }
+.w-row:hover { background: rgba(163, 230, 53, .05); }
+.w-row:hover .chev { color: var(--acc); transform: translateX(3px); }
+.w-row .chev { transition: transform .2s var(--ease), color .2s; }
+.w-row:hover .ico { background: rgba(163, 230, 53, .16); }
+
+/* ---------- Кнопки ---------- */
+button, .banner-btn, .tab, .file-btn, .addrow summary { cursor: pointer; }
+button { min-height: 40px; border-radius: 11px; }
+button.sm { min-height: 32px; }
+.eye, .reply-btn, .reply-chip button { min-height: 0; }
+button.primary, .banner-btn, a.primary {
+  background: linear-gradient(180deg, #b6f04f 0%, var(--acc) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 22px rgba(163, 230, 53, .25);
+  transition: transform .2s var(--ease), box-shadow .2s, filter .2s;
+}
+button.primary:hover, .banner-btn:hover, a.primary:hover {
+  background: linear-gradient(180deg, #c8f77a 0%, var(--acc-hi) 100%);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 10px 30px rgba(163, 230, 53, .38);
+}
+button.primary:active, .banner-btn:active { transform: translateY(0); filter: brightness(.95); }
+
+/* ---------- Поля ввода ---------- */
+input:not([type="checkbox"]):not([type="radio"]), select { min-height: 42px; border-radius: 11px; border-color: #2e2e34; }
+input:hover:not(:focus), select:hover:not(:focus) { border-color: #45454d; }
+input:focus, select:focus { background: #1d1d23; }
+
+/* ---------- Сайдбар ---------- */
+.side { background: linear-gradient(180deg, #0a0a0c 0%, #060607 100%); }
+.logo { text-shadow: 0 0 22px rgba(163, 230, 53, .25); }
+.logo span { text-shadow: 0 0 14px rgba(163, 230, 53, .8); }
+.side nav a { transition: color .2s, background .2s, transform .2s var(--ease); }
+.side nav a:hover { transform: translateX(2px); }
+.side nav a.active {
+  background: linear-gradient(90deg, rgba(163, 230, 53, .18), rgba(163, 230, 53, 0) 90%);
+  box-shadow: inset 3px 0 0 var(--acc), 0 0 28px rgba(163, 230, 53, .06);
+}
+.side nav a.active svg { filter: drop-shadow(0 0 6px rgba(163, 230, 53, .6)); }
+
+/* ---------- Баннер на главной ---------- */
+.banner { border-color: rgba(163, 230, 53, .22); box-shadow: var(--edge), 0 14px 44px rgba(0, 0, 0, .5), 0 0 60px rgba(163, 230, 53, .06); border-radius: 18px; }
+.banner h2 { font-family: var(--font-display); font-weight: 700; font-size: 50px; line-height: .98; letter-spacing: .01em; }
+.banner p { color: #b6b6bd; }
+
+/* ---------- Табы, чат, бейджи ---------- */
+.tab { transition: color .2s, border-color .2s, background .2s; min-height: 38px; display: inline-flex; align-items: center; }
+.tab:hover { background: var(--card2); }
+.tab.on { background: linear-gradient(180deg, #b6f04f, var(--acc)); box-shadow: 0 4px 18px rgba(163, 230, 53, .25); }
+.msg { border-radius: 16px 16px 16px 5px; }
+.msg.me { border-radius: 16px 16px 5px 16px; background: linear-gradient(180deg, #b6f04f, var(--acc)); }
+.chat-msgs { background: rgba(9, 9, 11, .8); }
+.contact { transition: background .2s, color .2s; }
+.badge { box-shadow: 0 0 12px rgba(163, 230, 53, .4); }
+
+/* ---------- Графики и прогресс-бары ---------- */
+.chart-box { background: rgba(24, 24, 29, .8); border-color: rgba(163, 230, 53, .3); box-shadow: 0 0 24px rgba(163, 230, 53, .08); }
+.m-track { border-radius: 8px; }
+.m-fill { border-radius: 8px; }
+
+/* ---------- Вход / регистрация ---------- */
+.auth-panel { background: linear-gradient(180deg, #0a0a0c, #060607); }
+.auth-hero h1 { font-size: 58px; line-height: 1.02; max-width: 480px; }
+.feat .ico { box-shadow: 0 0 20px rgba(163, 230, 53, .12); }
+.auth-card h2, .auth-center h2 { font-size: 30px; }
+.auth-solo .auth-center { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  background: rgba(10, 10, 12, .62); border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 22px; padding: 34px 30px; box-shadow: var(--edge), 0 24px 70px rgba(0, 0, 0, .6); }
+
+/* ---------- Появление блоков (лёгкая каскадная анимация) ---------- */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+main > *, .kpi-grid > *, .dash-grid > * { animation: rise .55s var(--ease) both; }
+.kpi-grid > *:nth-child(2), .dash-grid > *:nth-child(2) { animation-delay: .06s; }
+.kpi-grid > *:nth-child(3) { animation-delay: .12s; }
+.kpi-grid > *:nth-child(4) { animation-delay: .18s; }
+main > *:nth-child(2) { animation-delay: .04s; }
+main > *:nth-child(3) { animation-delay: .08s; }
+
+/* ---------- Мобильная версия ---------- */
+@media (max-width: 980px) {
+  main h1 { font-size: 28px; }
+  .banner h2 { font-size: 38px; }
+  .auth-card h2, .auth-center h2 { font-size: 26px; }
+  button, input:not([type="checkbox"]):not([type="radio"]), select, .tab { min-height: 44px; }   /* зона нажатия 44px */
+  button.sm { min-height: 38px; }
+  .eye, .reply-btn, .reply-chip button { min-height: 0; }
+  .kpi .v { font-size: 24px; }
+  .kpi:hover, .rec:hover, .ex-card:hover { transform: none; }  /* без «залипшего» hover на тач-экранах */
+  .bottom-nav { background: rgba(8, 8, 10, .9); }
+  .bottom-nav a { position: relative; transition: color .2s, background .2s; }
+  .bottom-nav a.active::before {
+    content: ""; position: absolute; top: 0; left: 24%; right: 24%; height: 2px;
+    border-radius: 0 0 3px 3px; background: var(--acc); box-shadow: 0 0 12px var(--acc);
+  }
+}
+
+/* Меньше анимации — по желанию пользователя (дополнение к правилу выше) */
+@media (prefers-reduced-motion: reduce) {
+  main > *, .kpi-grid > *, .dash-grid > * { animation: none; }
+  .kpi:hover, .rec:hover, .ex-card:hover, .side nav a:hover { transform: none; }
+}
