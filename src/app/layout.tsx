@@ -1,7 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Manrope } from "next/font/google";
+import { Manrope, Oswald } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/auth-actions";
 import { NavLink } from "@/components/nav-link";
@@ -12,6 +12,14 @@ const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-manrope",
+  display: "swap",
+});
+
+// Спортивный узкий шрифт для заголовков и крупных цифр
+const oswald = Oswald({
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600", "700"],
+  variable: "--font-oswald",
   display: "swap",
 });
 
@@ -66,13 +74,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       || path.startsWith("/register") || path.startsWith("/update-password") || path.startsWith("/auth/");
     if (bare) {
       return (
-        <html lang="ru" className={manrope.variable}>
+        <html lang="ru" className={`${manrope.variable} ${oswald.variable}`}>
           <body>{children}</body>
         </html>
       );
     }
     return (
-      <html lang="ru" className={manrope.variable}>
+      <html lang="ru" className={`${manrope.variable} ${oswald.variable}`}>
         <body>
           <div className="shell">
             <aside className="side guest">
@@ -86,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="ru" className={manrope.variable}>
+    <html lang="ru" className={`${manrope.variable} ${oswald.variable}`}>
       <body>
         <div className="shell">
           <aside className="side">
