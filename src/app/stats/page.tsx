@@ -113,8 +113,12 @@ export default async function StatsPage() {
         {wos.some((w) => w.workout_date) ? (
           <div className="w-bars">
             {perDay.map((n, i) => (
-              <div key={i} className="b">
-                <span className="bar" style={{ height: `${Math.max((n / dMax) * 100, 4)}%` }} />
+              <div key={i} className="b" title={`${WD[i]}: ${n}`}>
+                <span className="val">{n > 0 ? n : ""}</span>
+                <span
+                  className={`bar${n === 0 ? " zero" : ""}${n > 0 && n === dMax ? " peak" : ""}`}
+                  style={{ height: `${Math.max((n / dMax) * 100, 4)}%` }}
+                />
                 <span className="lbl">{WD[i]}</span>
               </div>
             ))}

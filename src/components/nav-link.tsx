@@ -21,13 +21,14 @@ const ICONS: Record<string, React.ReactNode> = {
   "/clients": <UsersIcon />,
   "/chat": <MessageIcon />,
   "/feed": <ListIcon />,
+  "/more": <ListIcon />,
 };
 
-export function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function NavLink({ href, children, also = [] }: { href: string; children: React.ReactNode; also?: string[] }) {
   const pathname = usePathname();
-  const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const active = href === "/" ? pathname === "/" : [href, ...also].some((p) => pathname.startsWith(p));
   return (
-    <Link href={href} className={active ? "active" : undefined}>
+    <Link href={href} className={active ? "active" : undefined} aria-current={active ? "page" : undefined}>
       {ICONS[href] ?? null}
       <span>{children}</span>
     </Link>

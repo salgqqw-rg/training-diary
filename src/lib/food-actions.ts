@@ -59,7 +59,20 @@ export async function addMealEntry(fd: FormData) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !MEALS.has(meal) || grams <= 0) return;
   if (!name && !ref) return;
 
-  if (ref.startsWith("fs:")) {
+  if (ref.startsWith("of:")) {
+    // Каталог Open Food Facts в нашей базе (таблица food_catalog)
+    const { data: cf } = await supabase
+      .from("food_catalog")
+      .select("name, brand, kcal, protein_g, fat_g, carbs_g")
+      .eq("code", ref.slice(3))
+      .maybeSingle();
+    if (!cf) return;
+    if (!name) name = cf.brand ? `${cf.name} · ${cf.brand}` : cf.name;
+    kcal100 = Number(cf.kcal);
+    p100 = Number(cf.protein_g);
+    f100 = Number(cf.fat_g);
+    c100 = Number(cf.carbs_g);
+  } else if (ref.startsWith("fs:")) {
     const f = await fatSecretFood(ref.slice(3));
     if (!f) return;
     if (!name) name = f.name;

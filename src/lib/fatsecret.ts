@@ -1,6 +1,8 @@
 // Клиент FatSecret Platform API (поиск продуктов и детальное КБЖУ).
 // Ключи берём из env: FATSECRET_CLIENT_ID / FATSECRET_CLIENT_SECRET.
-// Без ключей все функции возвращают null — сайт работает со своей базой продуктов.
+// Тариф Basic отдаёт только US-базу с английскими названиями: кириллические
+// запросы там не находятся (ru-база — платный Premier). Без ключей все функции
+// возвращают null — сайт работает со своей базой продуктов.
 
 type FSItem = { ref: string; name: string; sub: string; kcal100: number };
 
@@ -45,6 +47,28 @@ const num = (v: unknown) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// FatSecret иногда отвечает ошибкой 21 («Invalid IP address detected») даже для
+// адреса из белого списка — сбой на их стороне. Повторяем запрос пару раз.
+const isIpError = (j: unknown) =>
+  (j as { error?: { code?: number } } | null)?.error?.code === 21;
+
+async function fsGet(path: string, params: Record<string, string>, token: string): Promise<unknown | null> {
+  const url = new URL(`https://platform.fatsecret.com/rest/${path}`);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}`, "Accept-Language": "ru-RU" },
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as unknown;
+    if (!isIpError(j)) return j;
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 200));
+  }
+  return null;
+}
+
 // КБЖУ на 100 г из списка порций; 100 г → 1, другая г-порция или единица → пересчёт
 function per100FromServings(list: FSServing[]): { kcal100: number; p100: number; f100: number; c100: number } | null {
   if (!list.length) return null;
@@ -67,25 +91,13 @@ function per100FromServings(list: FSServing[]): { kcal100: number; p100: number;
   };
 }
 
-// Поиск продуктов (ru-база): возвращает элементы для подсказки в поиске
+// Поиск продуктов: возвращает элементы для подсказки в поиске
 export async function fatSecretSearch(q: string): Promise<FSItem[] | null> {
   const token = await getToken();
   if (!token) return null;
 
-  const url = new URL("https://platform.fatsecret.com/rest/foods/search/v1");
-  url.searchParams.set("search_expression", q);
-  url.searchParams.set("max_results", "12");
-  url.searchParams.set("format", "json");
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: { Authorization: `Bearer ${token}`, "Accept-Language": "ru-RU" },
-  });
-  if (!res.ok) return null;
-
-  const j = (await res.json()) as unknown;
-  // FatSecret отдаёт ошибки (например, код 21 «IP не в белом списке») с HTTP 200:
-  // {"error":{"code":21,"message":...}} — считаем это «API недоступен», откат на локальную базу
-  if (j && typeof j === "object" && "error" in j) return null;
+  const j = await fsGet("foods/search/v1", { search_expression: q, max_results: "12", format: "json" }, token);
+  if (!j) return null;
   const root = j as {
     foods_search?: { results?: { food?: unknown } };
     foods?: { food?: unknown };
@@ -137,17 +149,8 @@ export async function fatSecretFood(
   const token = await getToken();
   if (!token) return null;
 
-  const url = new URL("https://platform.fatsecret.com/rest/food/v1");
-  url.searchParams.set("food_id", id);
-  url.searchParams.set("format", "json");
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: { Authorization: `Bearer ${token}`, "Accept-Language": "ru-RU" },
-  });
-  if (!res.ok) return null;
-
-  const j = (await res.json()) as unknown;
-  if (j && typeof j === "object" && "error" in j) return null;
+  const j = await fsGet("food/v1", { food_id: id, format: "json" }, token);
+  if (!j) return null;
   const f = ((j as { food?: unknown }).food ?? j) as {
     food_name?: string;
     brand_name?: string;

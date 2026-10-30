@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCycle, deleteCycle, togglePublic } from "@/lib/actions";
+import { ConfirmButton } from "@/components/confirm-button";
 
 // «Дневник» — управление тренировочными программами (бывш. «Мои циклы»)
 export default async function DiaryPage() {
@@ -30,7 +31,7 @@ export default async function DiaryPage() {
       </div>
 
       {(cycles ?? []).map((c) => (
-        <div key={c.id} className="card row between">
+        <div key={c.id} className="card cycle-row">
           <Link href={`/cycles/${c.id}`}><b>{c.name}</b></Link>
           <span className="muted">
             {c.created_by && c.created_by !== user.id && <span className="up">от тренера · </span>}
@@ -44,7 +45,7 @@ export default async function DiaryPage() {
             </form>
             <form action={deleteCycle}>
               <input type="hidden" name="id" value={c.id} />
-              <button className="sm danger">Удалить</button>
+              <ConfirmButton className="sm danger" message={`Удалить цикл «${c.name}» со всеми тренировками и подходами? Это нельзя отменить.`}>Удалить</ConfirmButton>
             </form>
           </div>
         </div>

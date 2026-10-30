@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { saveDailyLog, deleteDailyLog, addSupplement, deleteSupplement } from "@/lib/daily-actions";
+import { loadPlan } from "@/lib/nutrition-target";
 import { FoodDay, type MealEntryDTO } from "./food-day";
 
 const FIELDS: { key: string; label: string; step: string }[] = [
@@ -54,7 +55,7 @@ export default async function DailyPage({
 
   const selDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? "") ? (dateParam as string) : today();
 
-  const [{ data: rows }, { data: mealRows }, { data: suppRows }] = await Promise.all([
+  const [{ data: rows }, { data: mealRows }, { data: suppRows }, planData] = await Promise.all([
     supabase.from("daily_logs").select("*").eq("user_id", targetId).order("log_date", { ascending: false }),
     supabase
       .from("meal_entries")
@@ -63,6 +64,7 @@ export default async function DailyPage({
       .eq("log_date", selDate)
       .order("created_at"),
     supabase.from("supplements").select("*").eq("user_id", targetId).order("created_at", { ascending: false }),
+    loadPlan(supabase, targetId),
   ]);
 
   const logs = (rows ?? []) as Record<string, unknown>[];
@@ -89,7 +91,7 @@ export default async function DailyPage({
             <button className="sm">{new Date(selDate).toLocaleDateString("ru-RU", { weekday: "short" })} Показать</button>
           </form>
         </div>
-        <FoodDay date={selDate} canEdit={canEdit} entries={entries} />
+        <FoodDay date={selDate} canEdit={canEdit} entries={entries} target={planData?.result ?? null} />
       </div>
 
       {/* ======== Сон, шаги и заметка ======== */}

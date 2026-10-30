@@ -28,24 +28,40 @@ const f1 = (n: number) => {
   return String(v).replace(".", ",");
 };
 
-function Totals({ entries }: { entries: MealEntryDTO[] }) {
+type Target = { kcal: number; protein_g: number; fat_g: number; carbs_g: number };
+
+function Totals({ entries, target }: { entries: MealEntryDTO[]; target: Target | null }) {
   const sum = (k: "kcal" | "protein_g" | "fat_g" | "carbs_g") =>
     entries.reduce((t, e) => t + Number(e[k] ?? 0), 0);
   const cells = [
-    { lbl: "Ккал", v: sum("kcal") },
-    { lbl: "Белки", v: sum("protein_g"), s: " г" },
-    { lbl: "Жиры", v: sum("fat_g"), s: " г" },
-    { lbl: "Углеводы", v: sum("carbs_g"), s: " г" },
+    { lbl: "Ккал", v: sum("kcal"), t: target?.kcal },
+    { lbl: "Белки", v: sum("protein_g"), s: " г", t: target?.protein_g },
+    { lbl: "Жиры", v: sum("fat_g"), s: " г", t: target?.fat_g },
+    { lbl: "Углеводы", v: sum("carbs_g"), s: " г", t: target?.carbs_g },
   ];
+  const left = target ? Math.round(target.kcal - sum("kcal")) : 0;
   return (
-    <div className="fd-totals">
-      {cells.map((c) => (
-        <div key={c.lbl} className="fd-t">
-          <span className="lbl">{c.lbl}</span>
-          <b>{c.v >= 100 || !c.s ? Math.round(c.v) : f1(c.v)}{c.s ?? ""}</b>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="fd-totals">
+        {cells.map((c) => (
+          <div key={c.lbl} className="fd-t">
+            <span className="lbl">{c.lbl}</span>
+            <b>{c.v >= 100 || !c.s ? Math.round(c.v) : f1(c.v)}{c.s ?? ""}</b>
+            {c.t ? (
+              <>
+                <small className="fd-of"> из {c.t}{c.s ?? ""}</small>
+                <i className="fd-bar"><u className={c.v > c.t ? "over" : ""} style={{ width: `${Math.min(100, (c.v / c.t) * 100)}%` }} /></i>
+              </>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      {target && (
+        <p className={left < 0 ? "fd-left over" : "fd-left"}>
+          {left >= 0 ? `Осталось ${left} ккал до нормы` : `Выше нормы на ${-left} ккал`}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -53,10 +69,12 @@ export function FoodDay({
   date,
   canEdit,
   entries,
+  target = null,
 }: {
   date: string;
   canEdit: boolean;
   entries: MealEntryDTO[];
+  target?: Target | null;
 }) {
   const [q, setQ] = useState("");
   const [items, setItems] = useState<SearchItem[] | null>(null);
@@ -86,7 +104,7 @@ export function FoodDay({
 
   return (
     <>
-      <Totals entries={entries} />
+      <Totals entries={entries} target={target} />
 
       {canEdit && (
         <div className="fd-add">
@@ -136,6 +154,20 @@ export function FoodDay({
                 style={{ width: "100%" }}
               />
               {loading && <p className="muted" style={{ fontSize: 13 }}>Ищу…</p>}
+              {!loading && items?.some((it) => it.ref.startsWith("of:")) && (
+                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
+                  Содержит данные{" "}
+                  <a href="https://world.openfoodfacts.org" target="_blank" rel="noreferrer">Open Food Facts</a>
+                  {", "}
+                  <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">лицензия ODbL</a>
+                </p>
+              )}
+              {!loading && items?.some((it) => it.ref.startsWith("fs:")) && (
+                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
+                  Данные{" "}
+                  <a href="https://platform.fatsecret.com" target="_blank" rel="noreferrer">fatsecret Platform API</a>
+                </p>
+              )}
               {items !== null && !loading && (
                 <div className="fd-results">
                   {items.length === 0 && <p className="muted" style={{ fontSize: 13 }}>Ничего не найдено</p>}

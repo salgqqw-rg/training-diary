@@ -1,11 +1,22 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { buildStats, type SetRow } from "@/lib/stats";
+import { CATALOG, norm } from "@/lib/exercise-catalog";
 import {
   addWorkout, deleteWorkout, addExercise, deleteExercise,
 } from "@/lib/actions";
+import Link from "next/link";
 import { QuickSets } from "./quick-sets";
 import { SetsTable } from "./sets-table";
+import { ConfirmButton } from "@/components/confirm-button";
+
+// «2026-10-29» → «29 окт., чт» (в UTC, чтобы дата не «плыла» из-за часового пояса)
+const fmtDay = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString("ru-RU", { day: "numeric", month: "short", weekday: "short", timeZone: "UTC" });
+};
 
 export default async function CyclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -58,7 +69,19 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
     };
   });
   const stats = buildStats(rows);
-  const names = [...new Set((exercises ?? []).map((e) => e.name))];
+  // Подсказки при вводе: каталог + свои упражнения + уже использованные в цикле
+  const { data: mine } = user
+    ? await supabase.from("user_exercises").select("id, name, base_key").eq("owner_id", user.id).is("base_key", null)
+    : { data: null };
+  const libKey = new Map<string, string>([
+    ...CATALOG.map((c): [string, string] => [norm(c.name), c.slug]),
+    ...(mine ?? []).map((m: { id: string; name: string }): [string, string] => [norm(m.name), m.id]),
+  ]);
+  const names = [...new Set([
+    ...(exercises ?? []).map((e) => e.name),
+    ...(mine ?? []).map((m: { name: string }) => m.name),
+    ...CATALOG.map((c) => c.name),
+  ])];
   const weeks = Array.from({ length: cycle.weeks_count }, (_, i) => i + 1);
 
   return (
@@ -82,12 +105,15 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
           {(workouts ?? []).filter((w) => w.week_number === week).map((wo) => (
             <div key={wo.id} className="workout">
               <div className="row between">
-                <b>{wo.workout_date ?? "Без даты"} {wo.note}</b>
+                <div className="workout-head">
+                  <b>{wo.workout_date ? fmtDay(wo.workout_date) : "Без даты"}</b>
+                  {wo.note && <span className="muted">{wo.note}</span>}
+                </div>
                 {canEdit && (
                   <form action={deleteWorkout}>
                     <input type="hidden" name="id" value={wo.id} />
                     <input type="hidden" name="cycle_id" value={id} />
-                    <button className="sm danger">Удалить</button>
+                    <ConfirmButton className="sm danger" message="Удалить тренировку со всеми упражнениями и подходами?">Удалить</ConfirmButton>
                   </form>
                 )}
               </div>
@@ -95,12 +121,14 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
               {(exercises ?? []).filter((e) => e.workout_id === wo.id).map((ex) => (
                 <div key={ex.id} className="exercise">
                   <div className="row between">
-                    <b>{ex.name}</b>
+                    {libKey.has(norm(ex.name))
+                      ? <Link href={`/exercises/${libKey.get(norm(ex.name))}`}><b>{ex.name}</b></Link>
+                      : <b>{ex.name}</b>}
                     {canEdit && (
                       <form action={deleteExercise}>
                         <input type="hidden" name="id" value={ex.id} />
                         <input type="hidden" name="cycle_id" value={id} />
-                        <button className="sm danger">✕</button>
+                        <ConfirmButton className="sm danger" aria-label={`Удалить упражнение «${ex.name}»`} message={`Удалить «${ex.name}» вместе с подходами?`}>✕</ConfirmButton>
                       </form>
                     )}
                   </div>
