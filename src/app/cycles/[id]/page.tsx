@@ -37,18 +37,15 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
   const canEdit = isOwner || isAuthor;
 
   // Имя тренера, составившего план (если он не мы)
-  let authorName: string | null = null;
-  if (cycle.created_by && cycle.created_by !== user?.id) {
-    const { data: author } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", cycle.created_by)
-      .maybeSingle();
-    authorName = author?.display_name ?? null;
-  }
   const ownerName = cycle.owner?.display_name ?? null;
 
-  const [{ data: workouts }, { data: exercises }, { data: sets }] = await Promise.all([
+  const [{ data: author }, { data: mine }, { data: workouts }, { data: exercises }, { data: sets }] = await Promise.all([
+    cycle.created_by && cycle.created_by !== user?.id
+      ? supabase.from("profiles").select("display_name").eq("id", cycle.created_by).maybeSingle()
+      : Promise.resolve({ data: null }),
+    user
+      ? supabase.from("user_exercises").select("id, name, base_key").eq("owner_id", user.id).is("base_key", null)
+      : Promise.resolve({ data: null }),
     supabase.from("workouts").select("*").eq("cycle_id", id).order("created_at"),
     supabase.from("exercises").select("*").eq("cycle_id", id).order("created_at"),
     supabase.from("workout_sets").select("*").eq("cycle_id", id).order("set_number"),
@@ -70,9 +67,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
   });
   const stats = buildStats(rows);
   // Подсказки при вводе: каталог + свои упражнения + уже использованные в цикле
-  const { data: mine } = user
-    ? await supabase.from("user_exercises").select("id, name, base_key").eq("owner_id", user.id).is("base_key", null)
-    : { data: null };
+  const authorName: string | null = (author as { display_name?: string } | null)?.display_name ?? null;
   const libKey = new Map<string, string>([
     ...CATALOG.map((c): [string, string] => [norm(c.name), c.slug]),
     ...(mine ?? []).map((m: { id: string; name: string }): [string, string] => [norm(m.name), m.id]),

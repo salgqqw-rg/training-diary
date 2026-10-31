@@ -25,16 +25,11 @@ export default async function StatsPage() {
   const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
-  const { data: cycles } = await supabase.from("cycles").select("id").eq("user_id", user.id);
-  const ids = (cycles ?? []).map((c) => c.id);
-
-  const [{ data: workouts }, { data: sets }] = ids.length
-    ? await Promise.all([
-        supabase.from("workouts").select("workout_date").in("cycle_id", ids),
-        supabase.from("workout_sets")
-          .select("weight, reps, exercises(name)").in("cycle_id", ids),
-      ])
-    : [{ data: null }, { data: null }];
+  const [{ data: workouts }, { data: sets }] = await Promise.all([
+    supabase.from("workouts").select("workout_date, cycles!inner(user_id)").eq("cycles.user_id", user.id),
+    supabase.from("workout_sets")
+      .select("weight, reps, exercises(name), cycles!inner(user_id)").eq("cycles.user_id", user.id),
+  ]);
 
   const rows = ((sets ?? []) as any[]).map((s) => ({
     name: s.exercises?.name ?? "",

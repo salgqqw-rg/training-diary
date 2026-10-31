@@ -5,13 +5,10 @@ export type Rec = { best: number; bestReps: number; sets: number; last: string }
 // Рекорды пользователя по названию упражнения (без регистра, ё = е)
 export async function loadRecords(supabase: any, userId: string): Promise<Map<string, Rec>> {
   const out = new Map<string, Rec>();
-  const { data: cycles } = await supabase.from("cycles").select("id").eq("user_id", userId);
-  const ids = (cycles ?? []).map((c: { id: string }) => c.id);
-  if (!ids.length) return out;
   const { data: sets } = await supabase
     .from("workout_sets")
-    .select("weight, reps, created_at, exercises(name, workouts(workout_date))")
-    .in("cycle_id", ids);
+    .select("weight, reps, created_at, exercises(name, workouts(workout_date)), cycles!inner(user_id)")
+    .eq("cycles.user_id", userId);
   for (const s of (sets ?? []) as any[]) {
     const name = s.exercises?.name;
     if (!name) continue;

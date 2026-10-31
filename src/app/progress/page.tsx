@@ -24,14 +24,9 @@ export default async function ProgressPage({
   const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
-  const { data: cycles } = await supabase.from("cycles").select("id").eq("user_id", user.id);
-  const ids = (cycles ?? []).map((c) => c.id);
-
-  const { data: sets } = ids.length
-    ? await supabase.from("workout_sets")
-        .select("weight, created_at, exercises(name, workouts(workout_date))")
-        .in("cycle_id", ids)
-    : { data: null };
+  const { data: sets } = await supabase.from("workout_sets")
+    .select("weight, created_at, exercises(name, workouts(workout_date)), cycles!inner(user_id)")
+    .eq("cycles.user_id", user.id);
 
   type Row = { name: string; weight: number; date: string };
   const rows: Row[] = ((sets ?? []) as any[]).map((s) => ({
