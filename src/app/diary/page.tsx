@@ -7,7 +7,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 // «Дневник» — управление тренировочными программами (бывш. «Мои циклы»)
 export default async function DiaryPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const { data: cycles } = await supabase

@@ -64,7 +64,7 @@ const NAV_BOTTOM = [
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
 
   // Неавторизованным показываем только шапку с логотипом, без навигации.
   // Экраны входа/регистрации — полноэкранные, без шапки (макет IRONLOG).

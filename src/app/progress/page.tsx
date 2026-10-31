@@ -21,7 +21,7 @@ export default async function ProgressPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const { data: cycles } = await supabase.from("cycles").select("id").eq("user_id", user.id);

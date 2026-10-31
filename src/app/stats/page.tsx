@@ -22,7 +22,7 @@ const WD = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
 // «Статистика» — общие показатели, распределение по мышцам, активность по дням
 export default async function StatsPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const { data: cycles } = await supabase.from("cycles").select("id").eq("user_id", user.id);

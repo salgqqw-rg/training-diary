@@ -15,7 +15,7 @@ export default async function GoalsPage({
 }) {
   const { user: targetParam, error, ok } = await searchParams;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   // Своя цель или цель подопечного (?user=)

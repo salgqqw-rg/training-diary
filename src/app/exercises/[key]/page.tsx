@@ -14,7 +14,7 @@ const fmt = (n: number) => n.toLocaleString("ru-RU", { maximumFractionDigits: 1 
 export default async function ExercisePage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const builtIn = isUuid(key) ? null : findBuiltIn(key);

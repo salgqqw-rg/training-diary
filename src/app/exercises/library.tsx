@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { MUSCLES, MUSCLE_KEYS, KINDS, norm, type Muscle } from "@/lib/exercise-catalog";
+import { MUSCLES, MUSCLE_KEYS, KINDS, norm, type Muscle } from "@/lib/exercise-meta";
 import { ExerciseForm } from "./exercise-form";
 
 export type LibItem = {

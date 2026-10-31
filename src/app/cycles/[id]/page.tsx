@@ -21,7 +21,7 @@ const fmtDay = (iso: string) => {
 export default async function CyclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
 
   // RLS отдаёт цикл владельцу, его тренеру (в режиме просмотра) или если цикл публичный.
   // Ссылка на profiles названа явно — в cycles теперь дваForeignKey на profiles (user_id и created_by)

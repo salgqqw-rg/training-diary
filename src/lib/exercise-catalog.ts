@@ -7,29 +7,9 @@ import { INFO } from "./exercise-info";
 import { MORE_ROWS } from "./exercise-more";
 import { GUIDE, HAS_IMAGE } from "./exercise-guide";
 
-export type Muscle =
-  | "chest" | "back" | "shoulders" | "traps" | "biceps" | "triceps" | "forearms"
-  | "abs" | "quads" | "hamstrings" | "glutes" | "calves" | "cardio";
-
-export const MUSCLES: Record<Muscle, string> = {
-  chest: "Грудь",
-  back: "Спина",
-  shoulders: "Плечи",
-  traps: "Трапеции",
-  biceps: "Бицепс",
-  triceps: "Трицепс",
-  forearms: "Предплечья",
-  abs: "Пресс",
-  quads: "Квадрицепс",
-  hamstrings: "Бицепс бедра",
-  glutes: "Ягодицы",
-  calves: "Икры",
-  cardio: "Кардио",
-};
-export const MUSCLE_KEYS = Object.keys(MUSCLES) as Muscle[];
-
-export type Kind = "base" | "isolation";
-export const KINDS: Record<Kind, string> = { base: "Базовое", isolation: "Изолирующее" };
+import { MUSCLE_KEYS, type Muscle, type Kind } from "./exercise-meta";
+export { MUSCLES, MUSCLE_KEYS, KINDS, norm } from "./exercise-meta";
+export type { Muscle, Kind } from "./exercise-meta";
 
 export type CatalogItem = {
   slug: string;
@@ -316,6 +296,5 @@ export function videoView(raw: string | null | undefined): VideoView | null {
 }
 
 // Для поиска: без регистра и ё = е
-export const norm = (s: string) => s.toLowerCase().replace(/ё/g, "е").trim();
 
 export const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);

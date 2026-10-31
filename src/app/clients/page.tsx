@@ -16,7 +16,7 @@ export default async function ClientsPage({
 }) {
   const { error, ok } = await searchParams;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   // Связи, где я тренер, и где я подопечный

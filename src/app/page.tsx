@@ -9,7 +9,7 @@ const fmt = (n: number, max = 1) =>
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: cycles }, { data: measures }] = await Promise.all([
@@ -32,7 +32,7 @@ export default async function HomePage() {
           .in("cycle_id", ids).order("workout_date", { ascending: false, nullsFirst: false }).limit(5),
         supabase.from("workouts").select("id, workout_date, note, cycle_id, cycles(name)")
           .in("cycle_id", ids).gte("workout_date", today).order("workout_date").limit(1),
-        supabase.from("workout_sets").select("weight, reps, created_at").in("cycle_id", ids),
+        supabase.from("workout_sets").select("weight, reps, created_at").in("cycle_id", ids).gte("created_at", d60),
         supabase.from("workouts").select("id", { count: "exact", head: true }).in("cycle_id", ids),
       ])
     : [{ data: null }, { data: null }, { data: null }, { count: null }];

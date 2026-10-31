@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { MUSCLES, MUSCLE_KEYS, KINDS } from "@/lib/exercise-catalog";
+import { MUSCLES, MUSCLE_KEYS, KINDS } from "@/lib/exercise-meta";
 import { saveExercise, signUpload } from "@/lib/exercise-actions";
 
 export type FormDefaults = {

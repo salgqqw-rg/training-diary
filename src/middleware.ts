@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
-  await supabase.auth.getUser();
+  await supabase.auth.getSession(); // обновляет токен только при истечении, без запроса в Supabase на каждый переход. shortcut: куки не сверяются с сервером, это делают RLS и server actions (getUser); для жёсткой проверки вернуть getUser
   return response;
 }
 

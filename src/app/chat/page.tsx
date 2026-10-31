@@ -13,7 +13,7 @@ export default async function ChatPage({
 }) {
   const { user: partnerParam } = await searchParams;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   // Собеседники: мои подопечные (я тренер) и мои тренеры (я подопечный)
