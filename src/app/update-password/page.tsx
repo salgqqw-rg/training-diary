@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MIN_PASSWORD } from "@/lib/password";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updatePassword } from "@/lib/auth-actions";
@@ -25,8 +26,8 @@ export default async function UpdatePasswordPage({
         {error && <p className="danger">{error}</p>}
         <h2>Новый пароль</h2>
         <form action={updatePassword} className="stack">
-          <PasswordInput name="password" minLength={6} required placeholder="Пароль" autoComplete="new-password" />
-          <PasswordInput name="confirm" minLength={6} required placeholder="Подтвердите пароль" autoComplete="new-password" />
+          <PasswordInput name="password" minLength={MIN_PASSWORD} required placeholder="Пароль" autoComplete="new-password" />
+          <PasswordInput name="confirm" minLength={MIN_PASSWORD} required placeholder="Подтвердите пароль" autoComplete="new-password" />
           <button className="primary">Сохранить</button>
         </form>
       </div>

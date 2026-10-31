@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { clampWeight, clampReps, clampRir, clampRpe, clampRest } from "@/lib/sets";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const num = (fd: FormData, k: string) => {
@@ -46,12 +47,54 @@ export async function togglePublic(fd: FormData) {
 export async function addWorkout(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
-  await supabase.from("workouts").insert({
+  const week = num(fd, "week");
+  const { data } = await supabase.from("workouts").insert({
     cycle_id: cycleId,
-    week_number: num(fd, "week"),
+    week_number: week,
     workout_date: str(fd, "date") || null,
     note: str(fd, "note") || null,
-  });
+  }).select("id").single();
+  revalidatePath(`/cycles/${cycleId}`);
+  // сразу открываем новую тренировку
+  if (data) redirect(`/cycles/${cycleId}?week=${week}&workout=${data.id}`);
+}
+
+// Копия тренировки в выбранную неделю и дату: упражнения и подходы переносятся, блокировка снимается
+export async function duplicateWorkout(fd: FormData) {
+  const { supabase } = await requireUser();
+  const cycleId = str(fd, "cycle_id");
+  const week = num(fd, "week");
+  const { data: src } = await supabase.from("workouts").select("note").eq("id", str(fd, "id")).maybeSingle();
+  if (!src || !week) return;
+  const { data: wo } = await supabase.from("workouts").insert({
+    cycle_id: cycleId,
+    week_number: week,
+    workout_date: str(fd, "date") || null,
+    note: src.note,
+  }).select("id").single();
+  if (!wo) return;
+  const { data: exs } = await supabase.from("exercises").select("id, name, note").eq("workout_id", str(fd, "id")).order("created_at");
+  for (const ex of exs ?? []) {
+    const { data: ne } = await supabase.from("exercises")
+      .insert({ cycle_id: cycleId, workout_id: wo.id, name: ex.name, note: ex.note }).select("id").single();
+    if (!ne) continue;
+    const { data: sets } = await supabase.from("workout_sets")
+      .select("set_number, weight, reps, rir, rpe, rest_sec").eq("exercise_id", ex.id).order("set_number");
+    if (sets?.length) {
+      await supabase.from("workout_sets").insert(sets.map((s: any) => ({ ...s, cycle_id: cycleId, exercise_id: ne.id })));
+    }
+  }
+  revalidatePath(`/cycles/${cycleId}`);
+  redirect(`/cycles/${cycleId}?week=${week}&workout=${wo.id}`);
+}
+
+export async function setWorkoutTimes(fd: FormData) {
+  const { supabase } = await requireUser();
+  const cycleId = str(fd, "cycle_id");
+  const t = (k: string) => (/^\d{2}:\d{2}$/.test(str(fd, k)) ? str(fd, k) : null);
+  await supabase.from("workouts")
+    .update({ start_time: t("start"), end_time: t("end") })
+    .eq("id", str(fd, "id"));
   revalidatePath(`/cycles/${cycleId}`);
 }
 
@@ -101,6 +144,13 @@ export async function deleteExercise(fd: FormData) {
   revalidatePath(`/cycles/${cycleId}`);
 }
 
+export async function saveExerciseNote(fd: FormData) {
+  const { supabase } = await requireUser();
+  const note = str(fd, "note").slice(0, 2000);
+  await supabase.from("exercises").update({ note: note || null }).eq("id", str(fd, "id"));
+  revalidatePath(`/cycles/${str(fd, "cycle_id")}`);
+}
+
 export async function addSet(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
@@ -113,10 +163,11 @@ export async function addSet(fd: FormData) {
     cycle_id: cycleId,
     exercise_id: exerciseId,
     set_number: (count ?? 0) + 1,
-    weight: num(fd, "weight") ?? 0,
-    reps: num(fd, "reps") ?? 0,
-    rir: num(fd, "rir"),
-    rpe: num(fd, "rpe"),
+    weight: clampWeight(fd.get("weight")),
+    reps: clampReps(fd.get("reps")),
+    rir: clampRir(fd.get("rir")),
+    rpe: clampRpe(fd.get("rpe")),
+    rest_sec: clampRest(fd.get("rest")),
   });
   revalidatePath(`/cycles/${cycleId}`);
 }
@@ -124,7 +175,7 @@ export async function addSet(fd: FormData) {
 export async function deleteSet(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
-  await supabase.from("workout_sets").delete().eq("id", str(fd, "id"));
+  await supabase.from("workout_sets").delete().eq("id", str(fd, "id")).eq("locked", false);
   revalidatePath(`/cycles/${cycleId}`);
 }
 
@@ -134,70 +185,25 @@ export async function updateSetsBulk(fd: FormData) {
   const cycleId = str(fd, "cycle_id");
   let rows: {
     id: string; set_number?: number; weight?: number; reps?: number;
-    rir?: number | null; rpe?: number | null;
+    rir?: number | null; rpe?: number | null; rest?: number | null;
   }[] = [];
   try { rows = JSON.parse(String(fd.get("rows") ?? "[]")); } catch { return; }
   if (!cycleId || !Array.isArray(rows)) return;
 
-  const clean = (v: unknown) => {
-    const n = typeof v === "string" && v.trim() === "" ? NaN : Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
+  const lock = str(fd, "lock") === "1"; // «Сохранить» фиксирует подходы навсегда
 
   for (const r of rows) {
     if (!r?.id) continue;
-    const patch: Record<string, number | null> = {};
+    const patch: Record<string, number | boolean | null> = {};
     if (r.set_number !== undefined) patch.set_number = Math.max(1, Math.min(99, Math.round(Number(r.set_number) || 1)));
-    if (r.weight !== undefined) patch.weight = Math.max(0, clean(r.weight) ?? 0);
-    if (r.reps !== undefined) patch.reps = Math.max(0, Math.round(clean(r.reps) ?? 0));
-    if (r.rir !== undefined) { const v = clean(r.rir); patch.rir = v === null ? null : Math.max(0, Math.min(10, v)); }
-    if (r.rpe !== undefined) { const v = clean(r.rpe); patch.rpe = v === null ? null : Math.max(1, Math.min(10, v)); }
+    if (r.weight !== undefined) patch.weight = clampWeight(r.weight);
+    if (r.reps !== undefined) patch.reps = clampReps(r.reps);
+    if (r.rir !== undefined) patch.rir = clampRir(r.rir);
+    if (r.rpe !== undefined) patch.rpe = clampRpe(r.rpe);
+    if (r.rest !== undefined) patch.rest_sec = clampRest(r.rest);
     if (!Object.keys(patch).length) continue;
-    await supabase.from("workout_sets").update(patch).eq("id", String(r.id));
+    if (lock) patch.locked = true;
+    await supabase.from("workout_sets").update(patch).eq("id", String(r.id)).eq("locked", false);
   }
-  revalidatePath(`/cycles/${cycleId}`);
-}
-
-// Быстрый ввод серией: «80x8, 82.5x6 @2» — вес x повторения [@RIR].
-// Разбираем строку и записываем все подходы одним действием
-export async function addSetsBulk(fd: FormData) {
-  const { supabase } = await requireUser();
-  const cycleId = str(fd, "cycle_id");
-  const exerciseId = str(fd, "exercise_id");
-  const raw = str(fd, "series");
-  if (!cycleId || !exerciseId) return;
-
-  const tokens = raw.split(/[,;\n]+/).map((t) => t.trim()).filter(Boolean);
-  const rows: {
-    cycle_id: string; exercise_id: string; set_number: number;
-    weight: number; reps: number; rir: number | null; rpe: null;
-  }[] = [];
-
-  const { count } = await supabase
-    .from("workout_sets")
-    .select("id", { count: "exact", head: true })
-    .eq("exercise_id", exerciseId);
-  let n = count ?? 0;
-
-  for (const tok of tokens) {
-    const m = tok.match(/^(\d+(?:[.,]\d+)?)\s*[xX×*]\s*(\d{1,3})(?:\s*@\s*(\d{1,2}))?/);
-    if (!m) continue;
-    const weight = Number(m[1].replace(",", "."));
-    const reps = Number(m[2]);
-    if (!Number.isFinite(weight) || !reps) continue;
-    n += 1;
-    rows.push({
-      cycle_id: cycleId,
-      exercise_id: exerciseId,
-      set_number: n,
-      weight,
-      reps,
-      rir: m[3] !== undefined && m[3] !== "" ? Number(m[3]) : null,
-      rpe: null,
-    });
-  }
-  if (!rows.length) return;
-
-  await supabase.from("workout_sets").insert(rows);
   revalidatePath(`/cycles/${cycleId}`);
 }

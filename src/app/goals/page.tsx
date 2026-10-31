@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { resetPlan } from "@/lib/goal-actions";
 import { ACTIVITY, GOALS } from "@/lib/nutrition";
 import { loadPlan } from "@/lib/nutrition-target";
@@ -15,7 +16,7 @@ export default async function GoalsPage({
 }) {
   const { user: targetParam, error, ok } = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // Своя цель или цель подопечного (?user=)

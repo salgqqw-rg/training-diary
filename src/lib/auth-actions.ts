@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { passwordError } from "@/lib/password";
 
 // Адрес приложения (учитывает прокси — туннель, Vercel)
 async function appOrigin(): Promise<string> {
@@ -32,6 +33,8 @@ export async function signUp(fd: FormData) {
   if (confirm && password !== confirm) {
     redirect("/register?error=" + encodeURIComponent("Пароли не совпадают"));
   }
+  const weak = passwordError(password);
+  if (weak) redirect("/register?error=" + encodeURIComponent(weak));
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: String(fd.get("email") ?? ""),
@@ -87,6 +90,8 @@ export async function updatePassword(fd: FormData) {
   if (password !== confirm) {
     redirect("/update-password?error=" + encodeURIComponent("Пароли не совпадают"));
   }
+  const weak = passwordError(password);
+  if (weak) redirect("/update-password?error=" + encodeURIComponent(weak));
   const { error } = await supabase.auth.updateUser({ password });
   if (error) redirect("/update-password?error=" + encodeURIComponent(error.message));
   revalidatePath("/", "layout");

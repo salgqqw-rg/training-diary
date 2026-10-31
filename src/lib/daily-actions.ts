@@ -11,8 +11,8 @@ async function requireUser() {
   return { supabase, user };
 }
 
-const goto = (key: "error" | "ok", msg: string): never =>
-  redirect(`/daily?${key}=${encodeURIComponent(msg)}`);
+const goto = (key: "error" | "ok", msg: string, tab = "food", extra = ""): never =>
+  redirect(`/daily?tab=${tab}${extra}&${key}=${encodeURIComponent(msg)}`);
 
 // КБЖУ за день теперь считаются автоматически из приёмов пищи (food-actions),
 // ручной ввод оставлен только для сна, шагов и заметки
@@ -24,7 +24,7 @@ const NUMERIC_FIELDS = [
 export async function saveDailyLog(fd: FormData) {
   const { supabase, user } = await requireUser();
   const date = String(fd.get("log_date") ?? "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) goto("error", "Выберите дату");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) goto("error", "Выберите дату", "sleep");
 
   const record: Record<string, string | number | null> = {
     user_id: user.id,
@@ -35,17 +35,17 @@ export async function saveDailyLog(fd: FormData) {
     const raw = String(fd.get(f) ?? "").trim().replace(",", ".");
     record[f] = raw === "" ? null : Number(raw);
     if (record[f] !== null && Number.isNaN(record[f] as number)) {
-      goto("error", "Некорректное число в одном из полей");
+      goto("error", "Некорректное число в одном из полей", "sleep", `&date=${date}`);
     }
   }
 
   const { error } = await supabase
     .from("daily_logs")
     .upsert(record, { onConflict: "user_id,log_date" });
-  if (error) goto("error", "Не удалось сохранить запись: " + error.message);
+  if (error) goto("error", "Не удалось сохранить запись: " + error.message, "sleep", `&date=${date}`);
 
   revalidatePath("/daily");
-  goto("ok", `Запись за ${date} сохранена`);
+  goto("ok", `Запись за ${date} сохранена`, "sleep", `&date=${date}`);
 }
 
 export async function deleteDailyLog(fd: FormData) {
@@ -69,13 +69,13 @@ export async function addSupplement(fd: FormData) {
   const kindRaw = String(fd.get("kind") ?? "supplement");
   const kind: Kind = kindRaw in KINDS ? (kindRaw as Kind) : "supplement";
   const name = String(fd.get("name") ?? "").trim().slice(0, 100);
-  if (!name) goto("error", "Укажите название");
+  if (!name) goto("error", "Укажите название", "supplements");
   const dosage = String(fd.get("dosage") ?? "").trim().slice(0, 100) || null;
   const startDate = String(fd.get("start_date") ?? "").trim() || null;
   const endDate = String(fd.get("end_date") ?? "").trim() || null;
   const note = String(fd.get("note") ?? "").trim().slice(0, 300) || null;
   if (startDate && endDate && endDate < startDate) {
-    goto("error", "Дата окончания раньше даты начала");
+    goto("error", "Дата окончания раньше даты начала", "supplements");
   }
 
   const { error } = await supabase.from("supplements").insert({
@@ -85,7 +85,7 @@ export async function addSupplement(fd: FormData) {
   if (error) {
     goto("error", error.code === "42P01"
       ? "Таблица не создана: выполните supabase/migration_05_supplements.sql в Supabase"
-      : "Не удалось добавить: " + error.message);
+      : "Не удалось добавить: " + error.message, "supplements");
   }
   revalidatePath("/daily");
 }

@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth-actions";
 import {
-  BarsIcon, UserIcon, TargetIcon, FlameIcon, RulerIcon, UsersIcon, MessageIcon, ListIcon, LogoutIcon,
+  UserIcon, TargetIcon, FlameIcon, RulerIcon, UsersIcon, MessageIcon, ListIcon, LogoutIcon,
 } from "@/components/icons";
 
 // «Ещё» — разделы, которым не хватило места в нижней панели телефона
 const LINKS = [
-  { href: "/stats", label: "Статистика", icon: <BarsIcon /> },
   { href: "/goals", label: "Цели", icon: <TargetIcon /> },
   { href: "/daily", label: "Питание и сон", icon: <FlameIcon /> },
   { href: "/measurements", label: "Характеристики", icon: <RulerIcon /> },
@@ -20,7 +20,7 @@ const LINKS = [
 
 export default async function MorePage() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   return (

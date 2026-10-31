@@ -631,7 +631,6 @@ td .set-in { text-align: center; }
 .exercise table { margin: 4px 0; }
 .card > h2 { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
 .card > h2::before { content: ""; width: 4px; height: 18px; border-radius: 3px; background: var(--acc); flex-shrink: 0; }
-.quick-sets input { background: var(--bg); }
 
 /* Замеры */
 .m-entry > .between b { letter-spacing: -.005em; }
@@ -1018,3 +1017,69 @@ main, .lib-chips { min-width: 0; }
 .bottom-nav a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lib-chip { min-height: 36px; }
 @media (min-width: 981px) { .more-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ---------- Цикл: список недель слева ---------- */
+.weeks-layout { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; align-items: start; }
+.weeks-body { min-width: 0; }
+.weeks-nav { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.weeks-nav h3 { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.weeks-nav a { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; color: var(--text); font-weight: 600; font-size: 14px; }
+.weeks-nav a:hover { background: var(--card2); }
+.weeks-nav a.active { background: var(--acc); color: var(--acc-ink); }
+.weeks-nav a span { font-size: 12px; min-width: 20px; text-align: center; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.weeks-nav a.active span { background: rgba(0, 0, 0, .18); }
+@media (max-width: 980px) {
+  .weeks-layout { grid-template-columns: 1fr; }
+  .weeks-nav { position: static; flex-direction: row; overflow-x: auto; max-height: none; padding: 8px; }
+  .weeks-nav h3 { display: none; }
+  .weeks-nav a { flex: none; white-space: nowrap; }
+}
+
+/* ---------- Неделя: выбор тренировки ---------- */
+.workout-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.workout-tabs a { display: flex; flex-direction: column; gap: 2px; padding: 8px 16px; max-width: 220px; border-radius: 14px; border: 1px solid var(--line); background: var(--card2); color: var(--text); font-weight: 600; font-size: 13.5px; white-space: nowrap; }
+.workout-tabs a:hover { border-color: var(--acc); }
+.workout-tabs a.active { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+.workout-tabs a b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; }
+.workout-tabs a small { font-size: 12px; opacity: .7; }
+
+/* ---------- Разделы внутри тренировки ---------- */
+.workout-subtabs { display: flex; gap: 4px; margin: 10px 0 14px; border-bottom: 1px solid var(--line); }
+.workout-subtabs a { padding: 9px 16px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 700; font-size: 14px; }
+.workout-subtabs a:hover { color: var(--text); }
+.workout-subtabs a.active { color: var(--acc-soft); border-bottom-color: var(--acc); }
+
+/* ---------- Таймер отдыха и подсказка «в прошлый раз» ---------- */
+.rest-timer { position: fixed; right: 16px; bottom: 16px; z-index: 60; }
+@media (max-width: 980px) { .rest-timer { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); } }
+.rt-fab { padding: 12px 18px; border-radius: 999px; border: 1px solid var(--acc); background: var(--card); color: var(--acc-soft); font-weight: 800; font-size: 14px; box-shadow: 0 8px 28px rgba(0, 0, 0, .55); cursor: pointer; }
+.rt-box { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); box-shadow: 0 8px 28px rgba(0, 0, 0, .55); }
+.rt-box.done { border-color: var(--acc); color: var(--acc-soft); }
+.rt-time { font-family: var(--font-display); font-size: 26px; letter-spacing: .02em; min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+.prev-hint { margin: 2px 0 6px; font-size: 13px; }
+.prev-hint b { color: var(--text); }
+.workout-time { margin: 6px 0; }
+
+/* ---------- Фото формы: месяц, выбор файлов и «Загрузить» в одну линию ---------- */
+.photo-form { align-items: flex-end; gap: 12px; }
+.photo-form label { margin: 0; }
+.photo-form input[type="month"] { height: 44px; min-height: 44px; }
+.photo-form .file-btn, .photo-form button { height: 44px; min-height: 44px; padding-top: 0; padding-bottom: 0; }
+
+/* ---------- Уведомления о сообщениях ---------- */
+.nav-badge {
+  margin-left: auto; background: var(--acc); color: var(--acc-ink); border-radius: 999px;
+  padding: 1px 7px; font-size: 11px; font-weight: 800; min-width: 18px; text-align: center; line-height: 1.5;
+}
+.bottom-nav a { position: relative; }
+.bottom-nav .nav-badge { position: absolute; top: 2px; right: calc(50% - 26px); margin: 0; padding: 0 5px; }
+.msg-toast {
+  position: fixed; top: 16px; right: 16px; z-index: 1000; max-width: min(340px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; border-radius: 14px;
+  background: var(--card2); border: 1px solid var(--acc); color: var(--text); text-decoration: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .55), 0 0 18px rgba(163, 230, 53, .25);
+  animation: toast-in .25s ease-out;
+}
+.msg-toast b { font-size: 14px; color: var(--acc); }
+.msg-toast span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }

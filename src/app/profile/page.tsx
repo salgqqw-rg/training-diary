@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { MIN_PASSWORD } from "@/lib/password";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { updateProfile, changeEmail, changePassword, deleteAccount } from "@/lib/profile-actions";
 import { PasswordInput } from "@/components/password-input";
 import { TargetIcon, FlameIcon, RulerIcon, UsersIcon, ListIcon } from "@/components/icons";
@@ -12,7 +14,7 @@ export default async function ProfilePage({
 }) {
   const { error, ok } = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
@@ -76,6 +78,18 @@ export default async function ProfilePage({
       </div>
 
       <div className="card">
+        <h3>Экспорт данных</h3>
+        <p className="muted" style={{ fontSize: 13 }}>
+          Скачайте свои данные в CSV — файлы открываются в Excel и Google Таблицах.
+        </p>
+        <div className="row">
+          <a className="sm-link" href="/api/export?type=sets" download>Тренировки и подходы</a>
+          <a className="sm-link" href="/api/export?type=measurements" download>Замеры</a>
+          <a className="sm-link" href="/api/export?type=daily" download>Питание и сон</a>
+        </div>
+      </div>
+
+      <div className="card">
         <h3>Сменить email</h3>
         <p className="muted" style={{ fontSize: 13 }}>
           На новый адрес придёт письмо — подтвердите смену по ссылке. До подтверждения вход остаётся по текущему email.
@@ -89,7 +103,7 @@ export default async function ProfilePage({
       <div className="card">
         <h3>Сменить пароль</h3>
         <form action={changePassword} className="stack">
-          <PasswordInput name="password" minLength={6} required placeholder="Новый пароль (от 6 символов)" />
+          <PasswordInput name="password" minLength={MIN_PASSWORD} required placeholder={`Новый пароль (от ${MIN_PASSWORD} символов)`} />
           <button className="primary">Сменить пароль</button>
         </form>
       </div>

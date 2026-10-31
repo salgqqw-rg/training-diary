@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { passwordError } from "@/lib/password";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -30,7 +31,7 @@ export async function updateProfile(fd: FormData) {
   }
 
   if (file instanceof File && file.size > 0) {
-    if (!file.type.startsWith("image/")) goto("error", "Файл не изображением");
+    if (!file.type.startsWith("image/")) goto("error", "Файл не является изображением");
     if (file.size > 5 * 1024 * 1024) goto("error", "Файл больше 5 МБ");
     const path = `${user.id}/avatar`; // стабильный путь, файл перезаписывается
     const { error: uploadErr } = await supabase.storage
@@ -73,7 +74,8 @@ export async function changeEmail(fd: FormData) {
 export async function changePassword(fd: FormData) {
   const { supabase } = await requireUser();
   const password = String(fd.get("password") ?? "");
-  if (password.length < 6) goto("error", "Пароль должен быть от 6 символов");
+  const weak = passwordError(password);
+  if (weak) goto("error", weak);
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) goto("error", "Не удалось сменить пароль: " + error.message);

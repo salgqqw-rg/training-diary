@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { createCycle, deleteCycle, togglePublic } from "@/lib/actions";
 import { ConfirmButton } from "@/components/confirm-button";
 
 // «Дневник» — управление тренировочными программами (бывш. «Мои циклы»)
 export default async function DiaryPage() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   const { data: cycles } = await supabase

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { fetchMessages, type ChatMessage, type Quote } from "@/lib/chat-actions";
 import { ChatWindow } from "@/components/chat-window";
 
@@ -13,7 +14,7 @@ export default async function ChatPage({
 }) {
   const { user: partnerParam } = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // Собеседники: мои подопечные (я тренер) и мои тренеры (я подопечный)

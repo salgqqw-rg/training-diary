@@ -11,8 +11,8 @@ async function requireUser() {
   return { supabase, user };
 }
 
-const goto = (key: "error" | "ok", msg: string): never =>
-  redirect(`/clients?${key}=${encodeURIComponent(msg)}`);
+const goto = (key: "error" | "ok", msg: string, tab = "clients"): never =>
+  redirect(`/clients?tab=${tab}&${key}=${encodeURIComponent(msg)}`);
 
 // Тренер приглашает подопечного по email
 export async function inviteTrainee(fd: FormData) {
@@ -78,7 +78,7 @@ export async function createTraineeCycle(fd: FormData) {
   const weeks = Number(fd.get("weeks"));
 
   if (!traineeId || !name || !weeks || weeks < 1 || weeks > 52) {
-    goto("error", "Укажите подопечного, название и количество недель (1–52)");
+    goto("error", "Укажите подопечного, название и количество недель (1–52)", "plans");
   }
 
   // Проверяем активную связь: RLS не пропустит чужой цикл, но для понятной ошибки — проверим сами
@@ -89,7 +89,7 @@ export async function createTraineeCycle(fd: FormData) {
     .eq("trainee_id", traineeId)
     .eq("status", "active")
     .maybeSingle();
-  if (!link) goto("error", "Активная связь с этим подопечным не найдена");
+  if (!link) goto("error", "Активная связь с этим подопечным не найдена", "plans");
 
   const { data: created, error } = await supabase
     .from("cycles")
@@ -102,5 +102,5 @@ export async function createTraineeCycle(fd: FormData) {
     revalidatePath("/diary");
     redirect(`/cycles/${created.id}`);
   }
-  goto("error", "Не удалось создать план — попробуйте ещё раз");
+  goto("error", "Не удалось создать план — попробуйте ещё раз", "plans");
 }

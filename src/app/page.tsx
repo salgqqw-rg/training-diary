@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { today as getToday } from "@/lib/today";
+import { shiftDay } from "@/lib/dates";
 import { Line } from "@/components/chart";
+import { fetchAll } from "@/lib/fetch-all";
 import { ChevronIcon, BoltIcon } from "@/components/icons";
 
 const fmt = (n: number, max = 1) =>
@@ -9,7 +13,7 @@ const fmt = (n: number, max = 1) =>
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: cycles }, { data: measures }] = await Promise.all([
@@ -22,20 +26,29 @@ export default async function HomePage() {
   const cycle = cycles?.[0];
   const ids = (cycles ?? []).map((c) => c.id);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const d30 = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-  const d60 = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
+  const today = await getToday();
+  const d30 = shiftDay(today, -30);
+  const d60 = shiftDay(today, -60);
 
-  const [{ data: recent }, { data: next }, { data: sets }, { count: wCount }] = ids.length
+  type SetRow = { weight: number; reps: number; created_at: string };
+  const [recentRes, nextRes, sets, countRes] = ids.length
     ? await Promise.all([
         supabase.from("workouts").select("id, workout_date, note, cycle_id, cycles(name)")
           .in("cycle_id", ids).order("workout_date", { ascending: false, nullsFirst: false }).limit(5),
         supabase.from("workouts").select("id, workout_date, note, cycle_id, cycles(name)")
           .in("cycle_id", ids).gte("workout_date", today).order("workout_date").limit(1),
-        supabase.from("workout_sets").select("weight, reps, created_at").in("cycle_id", ids).gte("created_at", d60),
-        supabase.from("workouts").select("id", { count: "exact", head: true }).in("cycle_id", ids),
+        // постранично: у Supabase лимит 1000 строк на запрос
+        fetchAll<SetRow>((from, to) =>
+          supabase.from("workout_sets").select("weight, reps, created_at").in("cycle_id", ids)
+            .gte("created_at", d60).order("id").range(from, to)),
+        // проведённые: дата не позже сегодня (или не указана); будущие планы не считаем
+        supabase.from("workouts").select("id", { count: "exact", head: true }).in("cycle_id", ids)
+          .or(`workout_date.is.null,workout_date.lte.${today}`),
       ])
-    : [{ data: null }, { data: null }, { data: null }, { count: null }];
+    : ([null, null, [] as SetRow[], null] as const);
+  const recent = recentRes?.data ?? null;
+  const next = nextRes?.data ?? null;
+  const wCount = countRes?.count ?? null;
 
   const planName = (r: { cycles: unknown }) =>
     (Array.isArray(r.cycles) ? r.cycles[0]?.name : (r.cycles as { name?: string } | null)?.name);
@@ -73,14 +86,14 @@ export default async function HomePage() {
           {cycle && <Link className="sm-link" style={{ marginTop: 8, display: "inline-block" }} href={`/cycles/${cycle.id}`}>Подробнее</Link>}
         </div>
         <div className="card kpi">
-          <div className="t">Общий прогресс</div>
+          <div className="t">Вес с начала</div>
           <div className="v">{gainPct === null ? "—" : `${gainPct > 0 ? "+" : ""}${gainPct.toFixed(1)}%`}</div>
           <span className="s">от первого замера</span>
         </div>
         <div className="card kpi">
-          <div className="t">Завершено тренировок</div>
+          <div className="t">Проведено тренировок</div>
           <div className="v">{fmt(wCount ?? 0, 0)}</div>
-          <span className="s">записей в дневнике</span>
+          <span className="s">без будущих планов</span>
         </div>
         <div className="card kpi">
           <div className="t">Текущий вес</div>

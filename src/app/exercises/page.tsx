@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { CATALOG, norm, photoUrls, type Muscle } from "@/lib/exercise-catalog";
 import { loadRecords } from "@/lib/exercise-records";
 import { Library, type LibItem } from "./library";
@@ -9,7 +10,7 @@ const fmt = (n: number) => n.toLocaleString("ru-RU", { maximumFractionDigits: 1 
 // «Упражнения» — библиотека: встроенный каталог + свои упражнения, поиск, рекорды
 export default async function ExercisesPage() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   const [{ data: mine }, records] = await Promise.all([

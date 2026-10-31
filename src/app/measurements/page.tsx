@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { today as getToday } from "@/lib/today";
+import { Line } from "@/components/chart";
 import {
   saveMeasurement, deleteMeasurement, uploadProgressPhotos, deleteProgressPhoto,
 } from "@/lib/measure-actions";
@@ -36,7 +39,6 @@ const fmtDate = (iso: string) => {
     ? iso
     : d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 };
-const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD по местному времени
 const monthText = (m: string) => {
   const d = new Date(`${m}-01T00:00:00Z`);
   return Number.isNaN(d.getTime())
@@ -59,11 +61,12 @@ function delta(cur: unknown, prev: unknown) {
 export default async function MeasurementsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ user?: string; date?: string; error?: string; ok?: string }>;
+  searchParams: Promise<{ user?: string; date?: string; metric?: string; error?: string; ok?: string }>;
 }) {
-  const { user: targetParam, date: editDate, error, ok } = await searchParams;
+  const { user: targetParam, date: editDate, metric: metricParam, error, ok } = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
+  const todayStr = await getToday();
   if (!user) redirect("/login");
 
   // Свои замеры или замеры подопечного (?user=)
@@ -111,6 +114,19 @@ export default async function MeasurementsPage({
   const backLink = isCoachView ? "/clients" : null;
   const chip = (v: unknown) => (v === null || v === undefined ? "—" : String(v).replace(".", ","));
 
+  // График выбранного показателя: только записи, где он заполнен, от старых к новым
+  const series = (key: string) =>
+    [...measurements]
+      .reverse()
+      .map((r) => ({ day: dayKey(r), v: r[key] === null || r[key] === undefined ? NaN : Number(r[key]) }))
+      .filter((p) => Number.isFinite(p.v) && p.v > 0);
+  const charts = ALL_FIELDS.filter((f) => series(f.key).length >= 2);
+  const metric = charts.find((f) => f.key === metricParam) ?? charts[0];
+  const pts = metric ? series(metric.key) : [];
+  const shortDay = (d: string) => d.slice(8, 10) + "." + d.slice(5, 7);
+  const metricHref = (k: string) =>
+    `/measurements?metric=${k}${isSelf ? "" : `&user=${encodeURIComponent(targetId)}`}`;
+
   return (
     <>
       <h1>Характеристики</h1>
@@ -125,7 +141,7 @@ export default async function MeasurementsPage({
           <form action={saveMeasurement}>
             <div className="row" style={{ marginTop: 6 }}>
               <label>Дата измерения
-                <input name="date" type="date" required defaultValue={editDate ?? today()} style={{ maxWidth: 180 }} />
+                <input name="date" type="date" required defaultValue={editDate ?? todayStr} style={{ maxWidth: 180 }} />
               </label>
               {!editDate && <button className="primary" type="submit">Сохранить</button>}
             </div>
@@ -154,6 +170,24 @@ export default async function MeasurementsPage({
               Пустые поля сохранятся как «—». Повторный ввод за ту же дату обновит запись.
             </p>
           </form>
+        </div>
+      )}
+
+      {metric && (
+        <div className="card">
+          <h3>Динамика: {metric.label.toLowerCase()}</h3>
+          <div className="tabs" style={{ margin: "4px 0 12px", flexWrap: "wrap" }}>
+            {charts.map((f) => (
+              <Link key={f.key} href={metricHref(f.key)} className={`tab${f.key === metric.key ? " on" : ""}`}>{f.label}</Link>
+            ))}
+          </div>
+          <div className="chart-head">
+            <div className="v">{chip(pts.at(-1)?.v)} {metric.unit}</div>
+            <div className={`s ${pts.at(-1)!.v >= pts[0].v ? "up" : "down"}`}>
+              {pts.at(-1)!.v >= pts[0].v ? "↑" : "↓"} {Math.abs(pts.at(-1)!.v - pts[0].v).toFixed(1).replace(".", ",")} {metric.unit} с первого замера
+            </div>
+          </div>
+          <Line values={pts.map((p) => p.v)} labels={[shortDay(pts[0].day), shortDay(pts.at(-1)!.day)]} height={220} gradId="meas" />
         </div>
       )}
 
@@ -214,12 +248,11 @@ export default async function MeasurementsPage({
       {canEdit && (
         <div className="card">
           <h3>Фото формы</h3>
-          <form action={uploadProgressPhotos} className="row">
+          <form action={uploadProgressPhotos} className="row photo-form">
             <label>Месяц
-              <input name="month" type="month" required defaultValue={today().slice(0, 7)} />
+              <input name="month" type="month" required defaultValue={todayStr.slice(0, 7)} />
             </label>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <label className="file-btn">
+            <label className="file-btn">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
@@ -229,12 +262,11 @@ export default async function MeasurementsPage({
                 Выбрать файлы
                 <input name="photos" type="file" accept="image/*" multiple />
               </label>
-              <p className="muted" style={{ fontSize: 12, margin: "5px 0 0" }}>
-                До 10 МБ каждое, можно несколько
-              </p>
-            </div>
-            <button className="primary" style={{ alignSelf: "flex-start" }}>Загрузить</button>
+            <button className="primary">Загрузить</button>
           </form>
+          <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
+            До 10 МБ каждое, можно несколько
+          </p>
 
           {[...photosByMonth.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([m, list]) => (
             <div key={m} style={{ borderTop: "1px solid var(--line)", marginTop: 8, paddingTop: 8 }}>

@@ -32,14 +32,13 @@ export default async function LoginPage({
           <form action={signIn} className="stack">
             <div className="field">
               <UserIcon className="p-ico" />
-              <input name="email" type="email" required placeholder="Email или логин" autoComplete="email" />
+              <input name="email" type="email" required placeholder="Email" autoComplete="email" />
             </div>
             <PasswordInput name="password" required placeholder="Пароль" autoComplete="current-password" />
             <button className="primary">Войти</button>
           </form>
-          <div className="auth-check-row">
-            <label className="check"><input type="checkbox" name="remember" defaultChecked />Запомнить меня</label>
-            <a href="/forgot-password" className="auth-footlink">Забыли пароль?</a>
+          <div className="auth-check-row" style={{ justifyContent: "flex-end" }}>
+            <Link href="/forgot-password" className="auth-footlink">Забыли пароль?</Link>
           </div>
           <div className="or"><span>или</span></div>
           <form action={signInWithGoogle}>

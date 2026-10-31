@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { today } from "@/lib/today";
 import { ACTIVITY, calcPlan, PACES, type Activity, type Goal, type Sex } from "@/lib/nutrition";
 
 async function requireUser() {
@@ -101,7 +102,7 @@ export async function savePlan(fd: FormData) {
     user_id: user.id, goal, sex, birth_date: birth,
     height_cm: num(fd.get("height")), start_weight_kg: weight, goal_weight_kg: goalWeight,
     activity, pace_kg_week: pace,
-    start_date: new Date().toISOString().slice(0, 10),
+    start_date: await today(),
     updated_at: new Date().toISOString(),
   }, { onConflict: "user_id" });
   if (error) {

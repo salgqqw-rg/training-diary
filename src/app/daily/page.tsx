@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { today as getToday } from "@/lib/today";
 import { saveDailyLog, deleteDailyLog, addSupplement, deleteSupplement } from "@/lib/daily-actions";
 import { loadPlan } from "@/lib/nutrition-target";
 import { FoodDay, type MealEntryDTO } from "./food-day";
+import { Line } from "@/components/chart";
 
 const FIELDS: { key: string; label: string; step: string }[] = [
   { key: "sleep_h", label: "Сон, ч", step: "0.1" },
@@ -21,16 +24,15 @@ const KINDS: Record<string, string> = {
 };
 
 const fmt = (v: unknown) => (v === null || v === undefined ? "—" : String(v));
-const today = () => new Date().toISOString().slice(0, 10);
 
 export default async function DailyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ user?: string; date?: string; error?: string; ok?: string }>;
+  searchParams: Promise<{ user?: string; date?: string; metric?: string; error?: string; ok?: string; tab?: string }>;
 }) {
-  const { user: targetParam, date: dateParam, error, ok } = await searchParams;
+  const { user: targetParam, date: dateParam, metric: metricParam, error, ok, tab: tabParam } = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // Свои записи или записи подопечного (?user=)
@@ -53,7 +55,7 @@ export default async function DailyPage({
     ? { display_name: null }
     : (await supabase.from("profiles").select("display_name").eq("id", targetId).maybeSingle()).data;
 
-  const selDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? "") ? (dateParam as string) : today();
+  const selDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? "") ? (dateParam as string) : await getToday();
 
   const [{ data: rows }, { data: mealRows }, { data: suppRows }, planData] = await Promise.all([
     supabase.from("daily_logs").select("*").eq("user_id", targetId).order("log_date", { ascending: false }),
@@ -73,6 +75,29 @@ export default async function DailyPage({
   const dayLog = logs.find((r) => r.log_date === selDate);
   const canEdit = isSelf;
 
+  // Динамика за последние 30 записей: показатели, где есть хотя бы две точки
+  const recent = logs.slice(0, 30).reverse();
+  const seriesOf = (key: string) =>
+    recent
+      .map((r) => ({ day: String(r.log_date), v: r[key] === null || r[key] === undefined ? NaN : Number(r[key]) }))
+      .filter((p) => Number.isFinite(p.v));
+  const chartable = FIELDS.filter((f) => seriesOf(f.key).length >= 2);
+  const metric = chartable.find((f) => f.key === metricParam) ?? chartable[0];
+  const pts = metric ? seriesOf(metric.key) : [];
+  const avg = pts.length ? pts.reduce((t, p) => t + p.v, 0) / pts.length : 0;
+  const shortDay = (d: string) => d.slice(8, 10) + "." + d.slice(5, 7);
+  const userQ = isSelf ? "" : `&user=${encodeURIComponent(targetId)}`;
+  const metricHref = (k: string) => `/daily?tab=history&metric=${k}${userQ}`;
+  // Разделы-вкладки; «Сон и шаги» редактирует только владелец
+  const TABS = [
+    { key: "food", label: "Питание" },
+    ...(canEdit ? [{ key: "sleep", label: "Сон и шаги" }] : []),
+    { key: "supplements", label: "Добавки и курсы" },
+    { key: "history", label: "Динамика и история" },
+  ];
+  const tab = TABS.find((t) => t.key === tabParam)?.key ?? "food";
+  const tabHref = (k: string) => `/daily?tab=${k}${userQ}${dateParam ? `&date=${selDate}` : ""}`;
+
   return (
     <>
       <h1>Питание и сон</h1>
@@ -81,25 +106,33 @@ export default async function DailyPage({
       {error && <p className="danger">{error}</p>}
       {ok && <p className="up">{ok}</p>}
 
+      <div className="workout-subtabs" role="tablist" aria-label="Разделы">
+        {TABS.map((t) => (
+          <Link key={t.key} href={tabHref(t.key)} scroll={false} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "active" : undefined}>{t.label}</Link>
+        ))}
+      </div>
+
       {/* ======== Дневник питания (как в FatSecret) ======== */}
+      {tab === "food" && (
       <div className="card">
         <div className="row between" style={{ marginBottom: 10 }}>
           <h3 style={{ margin: 0 }}>Питание</h3>
           <form method="get" className="row" style={{ gap: 8 }}>
             {!isSelf && <input type="hidden" name="user" value={targetId} />}
             <input type="date" name="date" defaultValue={selDate} style={{ width: 150 }} />
-            <button className="sm">{new Date(selDate).toLocaleDateString("ru-RU", { weekday: "short" })} Показать</button>
+            <button className="sm">{new Date(`${selDate}T00:00:00Z`).toLocaleDateString("ru-RU", { weekday: "short", timeZone: "UTC" })} Показать</button>
           </form>
         </div>
         <FoodDay date={selDate} canEdit={canEdit} entries={entries} target={planData?.result ?? null} />
       </div>
+      )}
 
       {/* ======== Сон, шаги и заметка ======== */}
-      {canEdit && (
+      {tab === "sleep" && canEdit && (
         <div className="card">
           <h3>Сон, шаги и заметка за день</h3>
           <p className="muted" style={{ fontSize: 13 }}>
-            Калории и БЖУ считаются автоматически из дневника питания выше. Повторное заполнение обновит запись.
+            Калории и БЖУ считаются автоматически из дневника питания. Повторное заполнение обновит запись.
           </p>
           <form action={saveDailyLog}>
             <div className="row">
@@ -127,6 +160,7 @@ export default async function DailyPage({
         </div>
       )}
 
+      {tab === "supplements" && (
       <div className="card">
         <h3>Добавки, БАДы и курсы</h3>
         {canEdit && (
@@ -198,6 +232,25 @@ export default async function DailyPage({
           </div>
         )}
       </div>
+      )}
+
+      {tab === "history" && (
+      <>
+      {metric && (
+        <div className="card">
+          <h3>Динамика за последние {pts.length} зап.</h3>
+          <div className="tabs" style={{ margin: "4px 0 12px", flexWrap: "wrap" }}>
+            {chartable.map((f) => (
+              <Link key={f.key} href={metricHref(f.key)} className={`tab${f.key === metric.key ? " on" : ""}`}>{f.label}</Link>
+            ))}
+          </div>
+          <div className="chart-head">
+            <div className="v">{avg.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}</div>
+            <span className="muted" style={{ fontSize: 13 }}>в среднем · {metric.label}</span>
+          </div>
+          <Line values={pts.map((p) => p.v)} labels={[shortDay(pts[0].day), shortDay(pts.at(-1)!.day)]} height={200} gradId="daily" />
+        </div>
+      )}
 
       <div className="card">
         <h3>История по дням</h3>
@@ -221,7 +274,7 @@ export default async function DailyPage({
                     <td>{typeof r.note === "string" && r.note ? r.note : "—"}</td>
                     {canEdit && (
                       <td>
-                        <Link href={`/daily?date=${String(r.log_date)}`}>Изменить</Link>
+                        <Link href={`/daily?tab=sleep&date=${String(r.log_date)}`}>Изменить</Link>
                         {" "}
                         <form action={deleteDailyLog} style={{ display: "inline" }}>
                           <input type="hidden" name="id" value={String(r.id)} />
@@ -239,6 +292,8 @@ export default async function DailyPage({
           Кликните дату — откроется день: еда из дневника питания, сон, шаги и заметка.
         </p>
       </div>
+      </>
+      )}
     </>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MIN_PASSWORD } from "@/lib/password";
 import { signUp, signInWithGoogle } from "@/lib/auth-actions";
 import { PasswordInput } from "@/components/password-input";
 import { UserIcon, MailIcon, GoogleIcon } from "@/components/icons";
@@ -26,8 +27,8 @@ export default async function RegisterPage({
             <MailIcon className="p-ico" />
             <input name="email" type="email" required placeholder="Email" autoComplete="email" />
           </div>
-          <PasswordInput name="password" minLength={6} required placeholder="Пароль" autoComplete="new-password" />
-          <PasswordInput name="confirm" minLength={6} required placeholder="Подтвердите пароль" autoComplete="new-password" />
+          <PasswordInput name="password" minLength={MIN_PASSWORD} required placeholder="Пароль" autoComplete="new-password" />
+          <PasswordInput name="confirm" minLength={MIN_PASSWORD} required placeholder="Подтвердите пароль" autoComplete="new-password" />
           <button className="primary">Зарегистрироваться</button>
         </form>
         <div className="or"><span>или</span></div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { inviteTrainee, respondInvite, removeLink, createTraineeCycle } from "@/lib/coach-actions";
 
 type Side = { id: string; display_name: string; email: string | null };
@@ -12,11 +13,11 @@ const asSide = (v: unknown): Side | null =>
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; tab?: string }>;
 }) {
-  const { error, ok } = await searchParams;
+  const { error, ok, tab: tabParam } = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user ?? null;
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // Связи, где я тренер, и где я подопечный
@@ -57,12 +58,27 @@ export default async function ClientsPage({
         .order("created_at", { ascending: false })
     : { data: null };
 
+  // Разделы-вкладки: «План» только при наличии активных подопечных, у «Тренеры» — число заявок
+  const TABS = [
+    { key: "clients", label: "Подопечные" },
+    ...(activeIds.length > 0 ? [{ key: "plans", label: "Планы и циклы" }] : []),
+    { key: "coaches", label: requests.length ? `Тренеры (${requests.length})` : "Тренеры" },
+  ];
+  const tab = TABS.find((t) => t.key === tabParam)?.key ?? "clients";
+
   return (
     <>
       <h1>Подопечные</h1>
       {error && <p className="danger">{error}</p>}
       {ok && <p className="up">{ok}</p>}
 
+      <div className="workout-subtabs" role="tablist" aria-label="Разделы">
+        {TABS.map((t) => (
+          <Link key={t.key} href={`/clients?tab=${t.key}`} scroll={false} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "active" : undefined}>{t.label}</Link>
+        ))}
+      </div>
+
+      {tab === "clients" && (
       <div className="card">
         <h3>Пригласить подопечного</h3>
         <form action={inviteTrainee} className="row">
@@ -73,8 +89,9 @@ export default async function ClientsPage({
           Подопечный подтвердит заявку на этой странице, после чего вы увидите все его циклы и прогресс.
         </p>
       </div>
+      )}
 
-      {requests.length > 0 && (
+      {tab === "coaches" && requests.length > 0 && (
         <div className="card">
           <h3>Заявки от тренеров</h3>
           {requests.map((r) => (
@@ -97,6 +114,7 @@ export default async function ClientsPage({
         </div>
       )}
 
+      {tab === "clients" && (
       <div className="card">
         <h3>Мои подопечные</h3>
         {activeIds.length === 0 && !clients.some((c) => c.status === "pending") && (
@@ -125,8 +143,9 @@ export default async function ClientsPage({
           </div>
         ))}
       </div>
+      )}
 
-      {myCoaches.length > 0 && (
+      {tab === "coaches" && myCoaches.length > 0 && (
         <div className="card">
           <h3>Мои тренеры</h3>
           {myCoaches.map((c) => (
@@ -142,7 +161,11 @@ export default async function ClientsPage({
         </div>
       )}
 
-      {activeIds.length > 0 && (
+      {tab === "coaches" && requests.length === 0 && myCoaches.length === 0 && (
+        <p className="muted">Заявок от тренеров нет, тренера у вас пока нет</p>
+      )}
+
+      {tab === "plans" && activeIds.length > 0 && (
         <>
           <div className="card">
             <h3>Составить план подопечному</h3>

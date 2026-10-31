@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  HomeIcon, BookIcon, DumbbellIcon, TrendIcon, BarsIcon, UserIcon,
+  HomeIcon, BookIcon, DumbbellIcon, TrendIcon, UserIcon,
   TargetIcon, FlameIcon, RulerIcon, UsersIcon, MessageIcon, ListIcon,
 } from "@/components/icons";
+import { UnreadBadge } from "@/components/unread";
 
 // Иконка пункта меню подбирается по адресу (как в макете IRONLOG)
 const ICONS: Record<string, React.ReactNode> = {
@@ -13,7 +14,6 @@ const ICONS: Record<string, React.ReactNode> = {
   "/diary": <BookIcon />,
   "/exercises": <DumbbellIcon />,
   "/progress": <TrendIcon />,
-  "/stats": <BarsIcon />,
   "/profile": <UserIcon />,
   "/goals": <TargetIcon />,
   "/daily": <FlameIcon />,
@@ -31,6 +31,7 @@ export function NavLink({ href, children, also = [] }: { href: string; children:
     <Link href={href} className={active ? "active" : undefined} aria-current={active ? "page" : undefined}>
       {ICONS[href] ?? null}
       <span>{children}</span>
+      {(href === "/chat" || href === "/more") && <UnreadBadge />}
     </Link>
   );
 }

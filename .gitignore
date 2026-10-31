@@ -1,6 +1,9 @@
 node_modules
 .next
-.env*.local
 tsconfig.tsbuildinfo
 .vercel
-.env*
+
+# секреты — не в git, но шаблон .env.example хранится
+.env
+.env.*
+!.env.example
