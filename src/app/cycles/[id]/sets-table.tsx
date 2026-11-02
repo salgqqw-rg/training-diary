@@ -13,6 +13,7 @@ type Row = {
   rir_max: number | null; // верхняя граница диапазона RIR
   rpe: number | null;
   rest: number | null; // отдых после подхода, сек
+  locked: boolean;
 };
 
 type Local = { id: string; weight: string; reps: string; rir: string; rpe: string; rest: string };
@@ -21,7 +22,7 @@ const fmtRir = (r: { rir: number | null; rir_max: number | null }) =>
   r.rir === null ? "" : r.rir_max === null ? String(r.rir) : `${r.rir}-${r.rir_max}`;
 
 // Таблица подходов упражнения: строки редактируются на месте,
-// одна кнопка «Сохранить» отправляет все изменения (строки остаются редактируемыми), ✕ удаляет строку
+// одна кнопка «Сохранить» отправляет все изменения и фиксирует строки, «Изменить» снимает фиксацию, ✕ удаляет строку
 export function SetsTable({
   cycleId,
   exerciseId,
@@ -43,39 +44,56 @@ export function SetsTable({
       rest: r.rest === null || r.rest === undefined ? "" : String(r.rest),
     })),
   );
-  const [saved, setSaved] = useState(false);
+  const [fixed, setFixed] = useState(rows.length > 0 && rows.every((r) => r.locked));
   const [pending, start] = useTransition();
 
-  if (!canEdit) {
+  // «Изменить» снимает фиксацию у всех подходов упражнения
+  const unlock = () =>
+    start(async () => {
+      const fd = new FormData();
+      fd.set("cycle_id", cycleId);
+      fd.set("lock", "0");
+      fd.set("rows", JSON.stringify(local.map((r) => ({ id: r.id }))));
+      await updateSetsBulk(fd);
+      setFixed(false);
+    });
+
+  if (!canEdit || fixed) {
     return (
-      <table>
-        <thead>
-          <tr><th>#</th><th>Вес</th><th>Повт.</th><th>RIR</th><th>RPE</th><th>Отдых, с</th></tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{r.set_number}</td>
-              <td>{r.weight}</td>
-              <td>{r.reps}</td>
-              <td>{fmtRir(r) || "—"}</td>
-              <td>{r.rpe ?? "—"}</td>
-              <td>{r.rest ?? "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <>
+        <table>
+          <thead>
+            <tr><th>#</th><th>Вес</th><th>Повт.</th><th>RIR</th><th>RPE</th><th>Отдых, с</th></tr>
+          </thead>
+          <tbody>
+            {local.map((r, i) => (
+              <tr key={r.id}>
+                <td>{i + 1}</td>
+                <td>{r.weight}</td>
+                <td>{r.reps}</td>
+                <td>{r.rir || "—"}</td>
+                <td>{r.rpe || "—"}</td>
+                <td>{r.rest || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {canEdit && (
+          <div className="row" style={{ marginTop: 6 }}>
+            <button className="sm" disabled={pending} onClick={unlock}>{pending ? "…" : "Изменить"}</button>
+          </div>
+        )}
+      </>
     );
   }
 
-  const upd = (id: string, key: keyof Local, v: string) => {
-    setSaved(false);
+  const upd = (id: string, key: keyof Local, v: string) =>
     setLocal((cur) => cur.map((r) => (r.id === id ? { ...r, [key]: v } : r)));
-  };
 
-  const saveRows = async () => {
+  const saveRows = async (lock: boolean) => {
     const fd = new FormData();
     fd.set("cycle_id", cycleId);
+    if (lock) fd.set("lock", "1");
     fd.set("rows", JSON.stringify(
       local.map((r, i) => ({
         id: r.id,
@@ -90,12 +108,12 @@ export function SetsTable({
     await updateSetsBulk(fd);
   };
 
-  const save = () => start(async () => { await saveRows(); setSaved(true); });
+  const save = () => start(async () => { await saveRows(true); setFixed(true); });
 
   // «+ подход»: новая строка копирует вес и повторы последней; правки таблицы сохраняются первыми
   const add = () =>
     start(async () => {
-      if (local.length) await saveRows();
+      if (local.length) await saveRows(false);
       const last = local[local.length - 1];
       const fd = new FormData();
       fd.set("cycle_id", cycleId);
@@ -142,7 +160,7 @@ export function SetsTable({
       <div className="row" style={{ marginTop: 6 }}>
         <button className="sm" disabled={pending} onClick={add}>+ подход</button>
         <button className="sm primary" disabled={pending || local.length === 0} onClick={save}>
-          {pending ? "Сохраняю…" : saved ? "Сохранено ✓" : "Сохранить подходы"}
+          {pending ? "Сохраняю…" : "Сохранить подходы"}
         </button>
       </div>
     </>

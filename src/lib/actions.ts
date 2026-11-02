@@ -179,7 +179,7 @@ export async function deleteSet(fd: FormData) {
   revalidatePath(`/cycles/${cycleId}`);
 }
 
-// Сохранить изменения подходов прямо из таблицы (вес, повт, RIR, RPE, номер); подходы остаются редактируемыми
+// Сохранить изменения подходов прямо из таблицы (вес, повт, RIR, RPE, номер)
 export async function updateSetsBulk(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
@@ -190,6 +190,8 @@ export async function updateSetsBulk(fd: FormData) {
   try { rows = JSON.parse(String(fd.get("rows") ?? "[]")); } catch { return; }
   if (!cycleId || !Array.isArray(rows)) return;
 
+  const lock = str(fd, "lock"); // "1" — зафиксировать подходы, "0" — снять фиксацию (кнопка «Изменить»)
+
   for (const r of rows) {
     if (!r?.id) continue;
     const patch: Record<string, number | boolean | null> = {};
@@ -199,6 +201,7 @@ export async function updateSetsBulk(fd: FormData) {
     if (r.rir !== undefined) Object.assign(patch, parseRir(r.rir));
     if (r.rpe !== undefined) patch.rpe = clampRpe(r.rpe);
     if (r.rest !== undefined) patch.rest_sec = clampRest(r.rest);
+    if (lock) patch.locked = lock === "1";
     if (!Object.keys(patch).length) continue;
     await supabase.from("workout_sets").update(patch).eq("id", String(r.id));
   }
