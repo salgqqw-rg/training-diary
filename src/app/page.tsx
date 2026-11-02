@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { isLove } from "@/lib/love";
 import { today as getToday } from "@/lib/today";
 import { shiftDay } from "@/lib/dates";
 import { Line } from "@/components/chart";
@@ -76,7 +77,9 @@ export default async function HomePage() {
   return (
     <>
       <h1>Привет, {name}</h1>
-      <p className="muted" style={{ margin: "-8px 0 18px" }}>Продолжай — ты на правильном пути!</p>
+      {isLove(user.email)
+        ? <p className="love-msg">Я тебя очень сильно люблю, котенок! ♥♥♥</p>
+        : <p className="muted" style={{ margin: "-8px 0 18px" }}>Продолжай — ты на правильном пути!</p>}
 
       <div className="kpi-grid">
         <div className="card kpi">

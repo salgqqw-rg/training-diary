@@ -9,6 +9,7 @@ import { NavLink } from "@/components/nav-link";
 import { LogoutIcon } from "@/components/icons";
 import { TzSync } from "@/components/tz-sync";
 import { UnreadWatcher } from "@/components/unread";
+import { isLove } from "@/lib/love";
 
 // Стильный геометрический шрифт приложения
 const manrope = Manrope({
@@ -106,9 +107,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     );
   }
 
+  const love = isLove(user.email);
   return (
-    <html lang="ru" className={`${manrope.variable} ${oswald.variable}`}>
+    <html lang="ru" className={`${manrope.variable} ${oswald.variable}`} data-theme={love ? "love" : undefined}>
       <body>
+        {love && (
+          <div className="hearts" aria-hidden="true">
+            {Array.from({ length: 9 }, (_, i) => <span key={i}>♥</span>)}
+          </div>
+        )}
         <TzSync />
         <UnreadWatcher />
         <div className="shell">

@@ -1014,7 +1014,7 @@ main, .lib-chips { min-width: 0; }
 .more-exit { margin-top: 18px; }
 .more-exit button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; color: var(--danger); background: var(--card2); }
 .bottom-nav a { min-width: 0; }
-.bottom-nav a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bottom-nav a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; line-height: 1.25; } /* overflow:hidden позволял подписи сжаться и обрезаться */
 .lib-chip { min-height: 36px; }
 @media (min-width: 981px) { .more-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
