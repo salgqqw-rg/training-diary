@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { clampWeight, clampReps, clampRir, clampRpe, clampRest } from "@/lib/sets";
+import { clampWeight, clampReps, parseRir, clampRpe, clampRest } from "@/lib/sets";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const num = (fd: FormData, k: string) => {
@@ -59,7 +59,7 @@ export async function addWorkout(fd: FormData) {
   if (data) redirect(`/cycles/${cycleId}?week=${week}&workout=${data.id}`);
 }
 
-// Копия тренировки в выбранную неделю и дату: упражнения и подходы переносятся, блокировка снимается
+// Копия тренировки в выбранную неделю и дату: упражнения и подходы переносятся
 export async function duplicateWorkout(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
@@ -79,7 +79,7 @@ export async function duplicateWorkout(fd: FormData) {
       .insert({ cycle_id: cycleId, workout_id: wo.id, name: ex.name, note: ex.note }).select("id").single();
     if (!ne) continue;
     const { data: sets } = await supabase.from("workout_sets")
-      .select("set_number, weight, reps, rir, rpe, rest_sec").eq("exercise_id", ex.id).order("set_number");
+      .select("set_number, weight, reps, rir, rir_max, rpe, rest_sec").eq("exercise_id", ex.id).order("set_number");
     if (sets?.length) {
       await supabase.from("workout_sets").insert(sets.map((s: any) => ({ ...s, cycle_id: cycleId, exercise_id: ne.id })));
     }
@@ -165,7 +165,7 @@ export async function addSet(fd: FormData) {
     set_number: (count ?? 0) + 1,
     weight: clampWeight(fd.get("weight")),
     reps: clampReps(fd.get("reps")),
-    rir: clampRir(fd.get("rir")),
+    ...parseRir(fd.get("rir")),
     rpe: clampRpe(fd.get("rpe")),
     rest_sec: clampRest(fd.get("rest")),
   });
@@ -175,22 +175,20 @@ export async function addSet(fd: FormData) {
 export async function deleteSet(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
-  await supabase.from("workout_sets").delete().eq("id", str(fd, "id")).eq("locked", false);
+  await supabase.from("workout_sets").delete().eq("id", str(fd, "id"));
   revalidatePath(`/cycles/${cycleId}`);
 }
 
-// Сохранить изменения подходов прямо из таблицы (вес, повт, RIR, RPE, номер)
+// Сохранить изменения подходов прямо из таблицы (вес, повт, RIR, RPE, номер); подходы остаются редактируемыми
 export async function updateSetsBulk(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
   let rows: {
     id: string; set_number?: number; weight?: number; reps?: number;
-    rir?: number | null; rpe?: number | null; rest?: number | null;
+    rir?: string | number | null; rpe?: number | null; rest?: number | null;
   }[] = [];
   try { rows = JSON.parse(String(fd.get("rows") ?? "[]")); } catch { return; }
   if (!cycleId || !Array.isArray(rows)) return;
-
-  const lock = str(fd, "lock") === "1"; // «Сохранить» фиксирует подходы навсегда
 
   for (const r of rows) {
     if (!r?.id) continue;
@@ -198,12 +196,11 @@ export async function updateSetsBulk(fd: FormData) {
     if (r.set_number !== undefined) patch.set_number = Math.max(1, Math.min(99, Math.round(Number(r.set_number) || 1)));
     if (r.weight !== undefined) patch.weight = clampWeight(r.weight);
     if (r.reps !== undefined) patch.reps = clampReps(r.reps);
-    if (r.rir !== undefined) patch.rir = clampRir(r.rir);
+    if (r.rir !== undefined) Object.assign(patch, parseRir(r.rir));
     if (r.rpe !== undefined) patch.rpe = clampRpe(r.rpe);
     if (r.rest !== undefined) patch.rest_sec = clampRest(r.rest);
     if (!Object.keys(patch).length) continue;
-    if (lock) patch.locked = true;
-    await supabase.from("workout_sets").update(patch).eq("id", String(r.id)).eq("locked", false);
+    await supabase.from("workout_sets").update(patch).eq("id", String(r.id));
   }
   revalidatePath(`/cycles/${cycleId}`);
 }

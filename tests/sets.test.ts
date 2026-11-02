@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clampReps, clampRest, clampRir, clampRpe, clampWeight, parseSeries } from "../src/lib/sets.ts";
+import { clampReps, clampRest, clampRir, clampRpe, clampWeight, parseRir, parseSeries } from "../src/lib/sets.ts";
 
 test("clamp: отрицательные и мусорные значения не проходят", () => {
   assert.equal(clampWeight(-5), 0);
@@ -31,4 +31,15 @@ test("parseSeries: формат «вес x повторы @RIR»", () => {
   ]);
   assert.deepEqual(parseSeries("мусор, 60x0, x5"), []);
   assert.equal(parseSeries("5000x5")[0].weight, 1000);
+});
+
+test("parseRir: число или диапазон", () => {
+  assert.deepEqual(parseRir("2"), { rir: 2, rir_max: null });
+  assert.deepEqual(parseRir("1-2"), { rir: 1, rir_max: 2 });
+  assert.deepEqual(parseRir("3 – 1"), { rir: 1, rir_max: 3 });
+  assert.deepEqual(parseRir("2-2"), { rir: 2, rir_max: null });
+  assert.deepEqual(parseRir("0-15"), { rir: 0, rir_max: 10 });
+  assert.deepEqual(parseRir(""), { rir: null, rir_max: null });
+  assert.deepEqual(parseRir("abc"), { rir: null, rir_max: null });
+  assert.deepEqual(parseRir(null), { rir: null, rir_max: null });
 });

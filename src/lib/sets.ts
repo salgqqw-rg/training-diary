@@ -12,6 +12,14 @@ const fin = (v: unknown): number | null => {
 export const clampWeight = (v: unknown) => Math.min(LIMITS.weight, Math.max(0, fin(v) ?? 0));
 export const clampReps = (v: unknown) => Math.min(LIMITS.reps, Math.max(0, Math.round(fin(v) ?? 0)));
 export const clampRir = (v: unknown) => { const n = fin(v); return n === null ? null : Math.min(10, Math.max(0, Math.round(n))); }; // в базе RIR — целое
+/** «2» → {2, null}, «1-2» / «1–2» → {1, 2}. rir — нижняя граница (по ней считается аналитика), rir_max — верхняя или null */
+export function parseRir(v: unknown): { rir: number | null; rir_max: number | null } {
+  const m = String(v ?? "").match(/^\s*(\d+(?:[.,]\d+)?)\s*(?:[-–—]\s*(\d+(?:[.,]\d+)?))?\s*$/);
+  if (!m) return { rir: null, rir_max: null };
+  const a = clampRir(m[1])!;
+  const b = m[2] === undefined ? a : clampRir(m[2])!;
+  return a === b ? { rir: a, rir_max: null } : { rir: Math.min(a, b), rir_max: Math.max(a, b) };
+}
 export const clampRpe = (v: unknown) => { const n = fin(v); return n === null ? null : Math.min(10, Math.max(1, n)); };
 export const clampRest = (v: unknown) => { const n = fin(v); return n === null ? null : Math.min(LIMITS.rest, Math.max(0, Math.round(n))); };
 

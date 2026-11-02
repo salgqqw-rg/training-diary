@@ -292,9 +292,9 @@ export default async function CyclePage({ params, searchParams }: { params: Prom
                           weight: Number(s.weight),
                           reps: s.reps,
                           rir: s.rir === null ? null : Number(s.rir),
+                          rir_max: s.rir_max === null || s.rir_max === undefined ? null : Number(s.rir_max),
                           rpe: s.rpe === null ? null : Number(s.rpe),
                           rest: s.rest_sec === null || s.rest_sec === undefined ? null : Number(s.rest_sec),
-                          locked: !!s.locked,
                         }))}
                       />
                     );
