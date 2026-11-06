@@ -11,8 +11,8 @@ async function requireUser() {
   return { supabase, user };
 }
 
-const goto = (key: "error" | "ok", msg: string): never =>
-  redirect(`/measurements?${key}=${encodeURIComponent(msg)}`);
+const goto = (key: "error" | "ok", msg: string, tab = ""): never =>
+  redirect(`/measurements?${tab ? `tab=${tab}&` : ""}${key}=${encodeURIComponent(msg)}`);
 
 // Поля замеров, приходящие из формы
 const NUMERIC_FIELDS = [
@@ -49,7 +49,7 @@ export async function saveMeasurement(fd: FormData) {
 
   revalidatePath("/measurements");
   const d = new Date(`${day}T00:00:00Z`).toLocaleString("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" });
-  goto("ok", `Замеры за ${d} сохранены`);
+  goto("ok", `Замеры за ${d} сохранены`, "history");
 }
 
 export async function deleteMeasurement(fd: FormData) {
@@ -66,13 +66,13 @@ export async function deleteMeasurement(fd: FormData) {
 export async function uploadProgressPhotos(fd: FormData) {
   const { supabase, user } = await requireUser();
   const month = String(fd.get("month") ?? "").trim();
-  if (!/^\d{4}-\d{2}$/.test(month)) goto("error", "Выберите месяц для фото");
+  if (!/^\d{4}-\d{2}$/.test(month)) goto("error", "Выберите месяц для фото", "photos");
 
   const files = fd.getAll("photos").filter((v): v is File => v instanceof File && v.size > 0);
-  if (!files.length) goto("error", "Выберите хотя бы одно фото");
+  if (!files.length) goto("error", "Выберите хотя бы одно фото", "photos");
   for (const file of files) {
-    if (!file.type.startsWith("image/")) goto("error", `Файл ${file.name} — не изображение`);
-    if (file.size > 10 * 1024 * 1024) goto("error", `Файл ${file.name} больше 10 МБ`);
+    if (!file.type.startsWith("image/")) goto("error", `Файл ${file.name} — не изображение`, "photos");
+    if (file.size > 10 * 1024 * 1024) goto("error", `Файл ${file.name} больше 10 МБ`, "photos");
   }
 
   for (const file of files) {
@@ -80,7 +80,7 @@ export async function uploadProgressPhotos(fd: FormData) {
     const { error: upErr } = await supabase.storage
       .from("progress")
       .upload(path, file, { contentType: file.type });
-    if (upErr) goto("error", "Не удалось загрузить " + file.name + ": " + upErr.message);
+    if (upErr) goto("error", "Не удалось загрузить " + file.name + ": " + upErr.message, "photos");
     const { data } = supabase.storage.from("progress").getPublicUrl(path);
     const { error } = await supabase.from("progress_photos").insert({
       user_id: user.id,
@@ -88,11 +88,11 @@ export async function uploadProgressPhotos(fd: FormData) {
       url: data.publicUrl,
       path,
     });
-    if (error) goto("error", "Не удалось сохранить фото: " + error.message);
+    if (error) goto("error", "Не удалось сохранить фото: " + error.message, "photos");
   }
 
   revalidatePath("/measurements");
-  goto("ok", `Фото добавлены за ${month}`);
+  goto("ok", `Фото добавлены за ${month}`, "photos");
 }
 
 export async function deleteProgressPhoto(fd: FormData) {

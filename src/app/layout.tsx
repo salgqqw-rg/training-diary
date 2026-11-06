@@ -55,6 +55,7 @@ const NAV_MAIN = [
   { href: "/diary", label: "Дневник" },
   { href: "/exercises", label: "Упражнения" },
   { href: "/progress", label: "Прогресс" },
+  { href: "/coaches", label: "Тренеры" },
   { href: "/profile", label: "Профиль" },
 ];
 
@@ -74,7 +75,7 @@ const NAV_BOTTOM = [
   { href: "/diary", label: "Дневник" },
   { href: "/exercises", label: "Упражнения" },
   { href: "/progress", label: "Прогресс" },
-  { href: "/more", label: "Ещё", also: ["/profile", ...NAV_MORE.map((n) => n.href)] },
+  { href: "/more", label: "Ещё", also: ["/profile", "/coaches", ...NAV_MORE.map((n) => n.href)] },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

@@ -46,7 +46,7 @@ create policy "coach_links: read own side" on coach_links for select
 
 -- Тренер отправляет заявку
 create policy "coach_links: coach invites" on coach_links for insert
-  with check (coach_id = auth.uid());
+  with check (coach_id = auth.uid() and status = 'pending');
 
 -- Подопечный подтверждает заявку (pending -> active)
 create policy "coach_links: trainee answers" on coach_links for update

@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { inviteTrainee, respondInvite, removeLink, createTraineeCycle } from "@/lib/coach-actions";
 
-type Side = { id: string; display_name: string; email: string | null };
-type RawLink = { id: string; status: string; trainee?: unknown; coach?: unknown };
+type Side = { id: string; display_name: string };
+type RawLink = { id: string; status: string; requested_by: string; note: string | null; trainee?: unknown; coach?: unknown };
 
 const asSide = (v: unknown): Side | null =>
   Array.isArray(v) ? (v[0] as Side) ?? null : (v as Side) ?? null;
@@ -24,27 +24,40 @@ export default async function ClientsPage({
   const [{ data: asCoach }, { data: asTrainee }] = await Promise.all([
     supabase
       .from("coach_links")
-      .select("id, status, trainee:profiles!coach_links_trainee_id_fkey(id, display_name, email)")
+      .select("id, status, requested_by, note, trainee:profiles!coach_links_trainee_id_fkey(id, display_name)")
       .eq("coach_id", user.id)
       .order("created_at", { ascending: false }),
     supabase
       .from("coach_links")
-      .select("id, status, coach:profiles!coach_links_coach_id_fkey(id, display_name, email)")
+      .select("id, status, requested_by, note, coach:profiles!coach_links_coach_id_fkey(id, display_name)")
       .eq("trainee_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
 
+  // Email связанных людей отдаёт функция (миграция 26): напрямую из profiles он закрыт
+  const { data: emails } = await supabase.rpc("linked_emails");
+  const emailById = new Map<string, string | null>();
+  for (const e of (emails ?? []) as { id: string; email: string | null }[]) emailById.set(e.id, e.email);
+
   const clients = (asCoach as unknown as RawLink[] ?? []).map((l) => ({
     id: l.id,
     status: l.status,
+    requestedBy: l.requested_by,
+    note: l.note,
     side: asSide(l.trainee),
   }));
   const coaches = (asTrainee as unknown as RawLink[] ?? []).map((l) => ({
     id: l.id,
     status: l.status,
+    requestedBy: l.requested_by,
+    note: l.note,
     side: asSide(l.coach),
   }));
-  const requests = coaches.filter((c) => c.status === "pending");
+  // Заявку подтверждает сторона, которая её не отправляла
+  const incoming = clients.filter((c) => c.status === "pending" && c.requestedBy !== user.id); // подопечные хотят ко мне
+  const listedClients = clients.filter((c) => !incoming.includes(c));
+  const requests = coaches.filter((c) => c.status === "pending" && c.requestedBy !== user.id); // тренеры зовут меня
+  const sent = coaches.filter((c) => c.status === "pending" && c.requestedBy === user.id); // я просился к тренеру
   const myCoaches = coaches.filter((c) => c.status === "active");
 
   // Циклы активных подопечных — RLS отдаёт их подтверждённому тренеру
@@ -60,9 +73,9 @@ export default async function ClientsPage({
 
   // Разделы-вкладки: «План» только при наличии активных подопечных, у «Тренеры» — число заявок
   const TABS = [
-    { key: "clients", label: "Подопечные" },
+    { key: "clients", label: incoming.length ? `Подопечные (${incoming.length})` : "Подопечные" },
     ...(activeIds.length > 0 ? [{ key: "plans", label: "Планы и циклы" }] : []),
-    { key: "coaches", label: requests.length ? `Тренеры (${requests.length})` : "Тренеры" },
+    { key: "coaches", label: requests.length ? `Мои тренеры (${requests.length})` : "Мои тренеры" },
   ];
   const tab = TABS.find((t) => t.key === tabParam)?.key ?? "clients";
 
@@ -114,16 +127,40 @@ export default async function ClientsPage({
         </div>
       )}
 
+      {tab === "clients" && incoming.length > 0 && (
+        <div className="card">
+          <h3>Хотят заниматься с вами</h3>
+          {incoming.map((r) => (
+            <div key={r.id} style={{ borderBottom: "1px solid var(--line)", padding: "6px 0" }}>
+              <div className="row between">
+                <b>{r.side?.display_name}</b>
+                <div className="row">
+                  <form action={respondInvite}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="answer" value="accept" />
+                    <button className="sm primary">Принять</button>
+                  </form>
+                  <form action={respondInvite}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="answer" value="decline" />
+                    <button className="sm danger">Отклонить</button>
+                  </form>
+                </div>
+              </div>
+              {r.note && <p className="muted" style={{ margin: "4px 0 0", whiteSpace: "pre-wrap" }}>{r.note}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
       {tab === "clients" && (
       <div className="card">
         <h3>Мои подопечные</h3>
-        {activeIds.length === 0 && !clients.some((c) => c.status === "pending") && (
-          <p className="muted">Пока никого нет</p>
-        )}
-        {clients.map((c) => (
+        {listedClients.length === 0 && <p className="muted">Пока никого нет. Пригласите по email или оставьте <Link href="/coaches?tab=mine">анкету в каталоге</Link>.</p>}
+        {listedClients.map((c) => (
           <div key={c.id} className="row between" style={{ borderBottom: "1px solid var(--line)", padding: "6px 0" }}>
             <div>
-              <b>{c.side?.display_name}</b> <span className="muted">{c.side?.email}</span>
+              <b>{c.side?.display_name}</b> <span className="muted">{c.side && emailById.get(c.side.id)}</span>
               {c.status === "pending" && <span className="muted"> · ждёт подтверждения</span>}
             </div>
             <div className="row">
@@ -161,8 +198,23 @@ export default async function ClientsPage({
         </div>
       )}
 
-      {tab === "coaches" && requests.length === 0 && myCoaches.length === 0 && (
-        <p className="muted">Заявок от тренеров нет, тренера у вас пока нет</p>
+      {tab === "coaches" && sent.length > 0 && (
+        <div className="card">
+          <h3>Отправленные заявки</h3>
+          {sent.map((c) => (
+            <div key={c.id} className="row between" style={{ borderBottom: "1px solid var(--line)", padding: "6px 0" }}>
+              <span><b>{c.side?.display_name}</b> <span className="muted">· ждёт ответа тренера</span></span>
+              <form action={removeLink}>
+                <input type="hidden" name="id" value={c.id} />
+                <button className="sm danger">Отменить</button>
+              </form>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "coaches" && requests.length === 0 && sent.length === 0 && myCoaches.length === 0 && (
+        <p className="muted">Тренера у вас пока нет. <Link href="/coaches">Найти тренера в каталоге</Link></p>
       )}
 
       {tab === "plans" && activeIds.length > 0 && (

@@ -65,6 +65,76 @@ function Totals({ entries, target }: { entries: MealEntryDTO[]; target: Target |
   );
 }
 
+// Ручной ввод в стиле FatSecret: название, производитель, ценность на 100 г или на порцию.
+// Поля называются kcal100/p100/f100/c100, но при per=serving значения — на порцию (пересчёт на сервере).
+function ManualForm({ date }: { date: string }) {
+  const [per, setPer] = useState<"100" | "serving">("100");
+  const [serving, setServing] = useState("100");
+  const [grams, setGrams] = useState("100");
+  const num = (name: string, label: string) => (
+    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: 0, padding: "9px 0", borderBottom: "1px solid var(--line)" }}>
+      {label}
+      <input name={name} type="number" inputMode="decimal" step="0.1" min={0} style={{ width: 120, margin: 0, textAlign: "right" }} />
+    </label>
+  );
+  return (
+    <form action={addMealEntry} className="stack" style={{ marginBottom: 0 }}>
+      <input type="hidden" name="log_date" value={date} />
+      <div className="row">
+        <label>Приём
+          <select name="meal" defaultValue="breakfast" style={{ width: "100%" }}>
+            {MEALS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+          </select>
+        </label>
+        <label style={{ flex: 2 }}>Наименование
+          <input name="name" required maxLength={100} placeholder="Например: овсянка" />
+        </label>
+        <label style={{ flex: 1 }}>Производитель
+          <input name="brand" maxLength={50} placeholder="Необязательно" />
+        </label>
+      </div>
+      <div className="row">
+        <div className="seg" style={{ maxWidth: 280 }}>
+          <label className="seg-opt">
+            <input type="radio" name="per" value="100" checked={per === "100"} onChange={() => setPer("100")} />
+            <span>На 100 г</span>
+          </label>
+          <label className="seg-opt">
+            <input type="radio" name="per" value="serving" checked={per === "serving"} onChange={() => { setPer("serving"); setGrams(serving); }} />
+            <span>На порцию</span>
+          </label>
+        </div>
+        {per === "serving" && (
+          <label>Размер порции, г
+            <input name="serving" type="number" inputMode="decimal" step="0.1" min={0.1} required value={serving}
+              onChange={(e) => { setServing(e.target.value); setGrams(e.target.value); }} style={{ width: 130 }} />
+          </label>
+        )}
+      </div>
+      <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+        Пищевая ценность {per === "100" ? "на 100 г" : `на порцию (${serving || "?"} г)`}
+      </p>
+      <div>
+        {num("kcal100", "Калории, ккал")}
+        {num("f100", "Жиры, г")}
+        {num("c100", "Углеводы, г")}
+        {num("p100", "Белки, г")}
+      </div>
+      <div className="row">
+        <label>Сколько съедено, г
+          <input name="grams" type="number" inputMode="decimal" step="0.1" min={0.1} required value={grams}
+            onChange={(e) => setGrams(e.target.value)} style={{ width: 130 }} />
+        </label>
+      </div>
+      <label className="fd-check">
+        <input type="checkbox" name="save_custom" value="1" defaultChecked />
+        <span>сохранить в общую библиотеку продуктов</span>
+      </label>
+      <button className="primary" style={{ alignSelf: "flex-start" }}>Добавить</button>
+    </form>
+  );
+}
+
 export function FoodDay({
   date,
   canEdit,
@@ -120,31 +190,7 @@ export function FoodDay({
           </div>
 
           {manual ? (
-            <form action={addMealEntry} className="stack" style={{ marginBottom: 0 }}>
-              <input type="hidden" name="log_date" value={date} />
-              <div className="row">
-                <label>Приём
-                  <select name="meal" defaultValue="breakfast" style={{ width: "100%" }}>
-                    {MEALS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-                  </select>
-                </label>
-                <label style={{ flex: 2 }}>Наименование
-                  <input name="name" required maxLength={150} placeholder="Например: овсянка" />
-                </label>
-              </div>
-              <div className="row">
-                <label>Ккал/100 г<input name="kcal100" type="number" step="0.1" min={0} style={{ width: 110 }} /></label>
-                <label>Белки<input name="p100" type="number" step="0.1" min={0} style={{ width: 90 }} /></label>
-                <label>Жиры<input name="f100" type="number" step="0.1" min={0} style={{ width: 90 }} /></label>
-                <label>Углев.<input name="c100" type="number" step="0.1" min={0} style={{ width: 90 }} /></label>
-                <label>Масса, г<input name="grams" type="number" step="1" min={1} defaultValue={100} style={{ width: 100 }} /></label>
-              </div>
-              <label className="fd-check">
-                <input type="checkbox" name="save_custom" value="1" defaultChecked />
-                <span>сохранить в общую библиотеку продуктов</span>
-              </label>
-              <button className="primary" style={{ alignSelf: "flex-start" }}>Добавить</button>
-            </form>
+            <ManualForm date={date} />
           ) : (
             <>
               <input
@@ -201,10 +247,10 @@ export function FoodDay({
 
       {MEALS.map((m) => {
         const list = entries.filter((e) => e.meal === m.key);
+        if (list.length === 0) return null;
         return (
           <div key={m.key} className="fd-meal">
             <h4>{m.label}</h4>
-            {list.length === 0 && <p className="muted" style={{ fontSize: 13, margin: "2px 0 0" }}>Пусто</p>}
             {list.map((e) => (
               <div key={e.id} className="fd-entry">
                 <span>{e.name}</span>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   HomeIcon, BookIcon, DumbbellIcon, TrendIcon, UserIcon,
-  TargetIcon, FlameIcon, RulerIcon, UsersIcon, MessageIcon, ListIcon,
+  TargetIcon, FlameIcon, RulerIcon, UsersIcon, AwardIcon, MessageIcon, ListIcon,
 } from "@/components/icons";
 import { UnreadBadge } from "@/components/unread";
 
@@ -19,6 +19,7 @@ const ICONS: Record<string, React.ReactNode> = {
   "/daily": <FlameIcon />,
   "/measurements": <RulerIcon />,
   "/clients": <UsersIcon />,
+  "/coaches": <AwardIcon />,
   "/chat": <MessageIcon />,
   "/feed": <ListIcon />,
   "/more": <ListIcon />,

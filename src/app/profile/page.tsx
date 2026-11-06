@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PhotoInput } from "@/components/photo-input";
 import { MIN_PASSWORD } from "@/lib/password";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -19,12 +20,12 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, email, avatar_url")
+    .select("display_name, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
   const name = String(profile?.display_name ?? "");
-  const email = profile?.email ?? user.email ?? "";
+  const email = user.email ?? "";
   const avatar = profile?.avatar_url ?? null;
 
   return (
@@ -70,7 +71,7 @@ export default async function ProfilePage({
               <path d="m7 10 5 5 5-5" />
             </svg>
             Выбрать фото
-            <input name="avatar" type="file" accept="image/*" />
+            <PhotoInput name="avatar" />
           </label>
           <p className="muted" style={{ fontSize: 12, margin: "5px 0 10px" }}>До 5 МБ</p>
           <button className="primary">Сохранить</button>

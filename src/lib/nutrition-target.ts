@@ -1,5 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
-import { calcPlan, type Activity, type Goal, type PlanResult, type Sex } from "@/lib/nutrition";
+import { calcPlan, withCustomMacros, type Activity, type Goal, type PlanResult, type Sex } from "@/lib/nutrition";
 
 type Supa = Awaited<ReturnType<typeof createClient>>;
 
@@ -14,6 +14,10 @@ export type PlanRow = {
   activity: Activity;
   pace_kg_week: number;
   start_date: string;
+  // Ручные БЖУ (migration 25): все три заданы или все null
+  custom_protein_g: number | null;
+  custom_fat_g: number | null;
+  custom_carbs_g: number | null;
 };
 
 // Анкета + текущий вес (последний замер после старта) + пересчитанная норма.
@@ -26,15 +30,14 @@ export async function loadPlan(supabase: Supa, userId: string) {
 
   const { data: m } = await supabase
     .from("measurements")
-    .select("weight, month")
+    .select("weight, measured_on")
     .eq("user_id", userId)
     .not("weight", "is", null)
-    .order("month", { ascending: false })
+    .order("measured_on", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const startMonth = plan.start_date.slice(0, 7) + "-01";
-  const currentWeight = m && String(m.month) >= startMonth ? Number(m.weight) : Number(plan.start_weight_kg);
+  const currentWeight = m && String(m.measured_on) >= plan.start_date.slice(0, 10) ? Number(m.weight) : Number(plan.start_weight_kg);
   const goalWeight = Number(plan.goal_weight_kg);
 
   // Цель достигнута — дальше считаем норму на поддержание веса
@@ -53,5 +56,9 @@ export async function loadPlan(supabase: Supa, userId: string) {
     paceKgWeek: Number(plan.pace_kg_week),
   });
 
-  return { plan, currentWeight, goalWeight, reached, result: res.ok ? (res as PlanResult) : null };
+  const { custom_protein_g: p, custom_fat_g: f, custom_carbs_g: c } = plan;
+  const custom = p != null && f != null && c != null;
+  const calc = res.ok ? (res as PlanResult) : null;
+
+  return { plan, currentWeight, goalWeight, reached, custom, result: calc && custom ? withCustomMacros(calc, p, f, c) : calc };
 }

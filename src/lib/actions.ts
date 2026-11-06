@@ -38,7 +38,8 @@ export async function togglePublic(fd: FormData) {
   const { supabase } = await requireUser();
   const id = str(fd, "id");
   const current = str(fd, "is_public") === "true";
-  await supabase.from("cycles").update({ is_public: !current }).eq("id", id);
+  const { error } = await supabase.from("cycles").update({ is_public: !current }).eq("id", id);
+  if (error) throw new Error(error.message);
   revalidatePath("/diary");
   revalidatePath("/feed");
   revalidatePath(`/cycles/${id}`);
@@ -92,9 +93,10 @@ export async function setWorkoutTimes(fd: FormData) {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
   const t = (k: string) => (/^\d{2}:\d{2}$/.test(str(fd, k)) ? str(fd, k) : null);
-  await supabase.from("workouts")
+  const { error } = await supabase.from("workouts")
     .update({ start_time: t("start"), end_time: t("end") })
     .eq("id", str(fd, "id"));
+  if (error) throw new Error(error.message);
   revalidatePath(`/cycles/${cycleId}`);
 }
 
@@ -147,7 +149,8 @@ export async function deleteExercise(fd: FormData) {
 export async function saveExerciseNote(fd: FormData) {
   const { supabase } = await requireUser();
   const note = str(fd, "note").slice(0, 2000);
-  await supabase.from("exercises").update({ note: note || null }).eq("id", str(fd, "id"));
+  const { error } = await supabase.from("exercises").update({ note: note || null }).eq("id", str(fd, "id"));
+  if (error) throw new Error(error.message);
   revalidatePath(`/cycles/${str(fd, "cycle_id")}`);
 }
 
@@ -180,15 +183,16 @@ export async function deleteSet(fd: FormData) {
 }
 
 // Сохранить изменения подходов прямо из таблицы (вес, повт, RIR, RPE, номер)
-export async function updateSetsBulk(fd: FormData) {
+// Возвращает текст ошибки или null; зафиксированные подходы правятся только после «Изменить» (lock=0)
+export async function updateSetsBulk(fd: FormData): Promise<string | null> {
   const { supabase } = await requireUser();
   const cycleId = str(fd, "cycle_id");
   let rows: {
     id: string; set_number?: number; weight?: number; reps?: number;
     rir?: string | number | null; rpe?: number | null; rest?: number | null;
   }[] = [];
-  try { rows = JSON.parse(String(fd.get("rows") ?? "[]")); } catch { return; }
-  if (!cycleId || !Array.isArray(rows)) return;
+  try { rows = JSON.parse(String(fd.get("rows") ?? "[]")); } catch { return "Не удалось разобрать данные"; }
+  if (!cycleId || !Array.isArray(rows)) return "Не удалось разобрать данные";
 
   const lock = str(fd, "lock"); // "1" — зафиксировать подходы, "0" — снять фиксацию (кнопка «Изменить»)
 
@@ -203,7 +207,11 @@ export async function updateSetsBulk(fd: FormData) {
     if (r.rest !== undefined) patch.rest_sec = clampRest(r.rest);
     if (lock) patch.locked = lock === "1";
     if (!Object.keys(patch).length) continue;
-    await supabase.from("workout_sets").update(patch).eq("id", String(r.id));
+    let q = supabase.from("workout_sets").update(patch).eq("id", String(r.id));
+    if (lock !== "0") q = q.eq("locked", false);
+    const { error } = await q;
+    if (error) return "Не удалось сохранить подходы: " + error.message;
   }
   revalidatePath(`/cycles/${cycleId}`);
+  return null;
 }

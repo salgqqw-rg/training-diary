@@ -24,7 +24,7 @@ Next.js 15 (App Router) + Supabase. Циклы по неделям, подход
 
 1. Создайте проект на [supabase.com](https://supabase.com).
 2. В SQL Editor выполните `supabase/schema.sql` — он уже включает всё до `migration_14` включительно.
-3. Затем по порядку выполните `migration_15` … `migration_23` из папки `supabase/`
+3. Затем по порядку выполните `migration_15` … `migration_27` из папки `supabase/`
    (каталог продуктов, план питания, библиотека упражнений, индексы, заметки, блокировка подходов, время отдыха и тренировки).
 4. Authentication → Providers → Email: для разработки отключите «Confirm email».
    Для входа через Google включите провайдер Google.

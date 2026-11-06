@@ -46,6 +46,7 @@ export function SetsTable({
   );
   const [fixed, setFixed] = useState(rows.length > 0 && rows.every((r) => r.locked));
   const [pending, start] = useTransition();
+  const [err, setErr] = useState("");
 
   // «Изменить» снимает фиксацию у всех подходов упражнения
   const unlock = () =>
@@ -54,8 +55,9 @@ export function SetsTable({
       fd.set("cycle_id", cycleId);
       fd.set("lock", "0");
       fd.set("rows", JSON.stringify(local.map((r) => ({ id: r.id }))));
-      await updateSetsBulk(fd);
-      setFixed(false);
+      const e = await updateSetsBulk(fd);
+      if (e) setErr(e);
+      else { setErr(""); setFixed(false); }
     });
 
   if (!canEdit || fixed) {
@@ -83,6 +85,7 @@ export function SetsTable({
             <button className="sm" disabled={pending} onClick={unlock}>{pending ? "…" : "Изменить"}</button>
           </div>
         )}
+        {err && <p className="danger">{err}</p>}
       </>
     );
   }
@@ -105,15 +108,21 @@ export function SetsTable({
         rest: r.rest.trim() === "" || isNaN(parseInt(r.rest, 10)) ? null : parseInt(r.rest, 10),
       })),
     ));
-    await updateSetsBulk(fd);
+    return updateSetsBulk(fd);
   };
 
-  const save = () => start(async () => { await saveRows(true); setFixed(true); });
+  const save = () =>
+    start(async () => {
+      const e = await saveRows(true);
+      if (e) setErr(e);
+      else { setErr(""); setFixed(true); }
+    });
 
   // «+ подход»: новая строка копирует вес и повторы последней; правки таблицы сохраняются первыми
   const add = () =>
     start(async () => {
-      if (local.length) await saveRows(false);
+      const saveErr = local.length ? await saveRows(false) : null;
+      if (saveErr) { setErr(saveErr); return; }
       const last = local[local.length - 1];
       const fd = new FormData();
       fd.set("cycle_id", cycleId);
@@ -163,6 +172,7 @@ export function SetsTable({
           {pending ? "Сохраняю…" : "Сохранить подходы"}
         </button>
       </div>
+      {err && <p className="danger">{err}</p>}
     </>
   );
 }

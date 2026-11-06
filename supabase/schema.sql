@@ -274,7 +274,7 @@ create policy "sets: write" on workout_sets for all
 create policy "coach_links: read own side" on coach_links for select
   using (coach_id = auth.uid() or trainee_id = auth.uid());
 create policy "coach_links: coach invites" on coach_links for insert
-  with check (coach_id = auth.uid());
+  with check (coach_id = auth.uid() and status = 'pending');
 create policy "coach_links: trainee answers" on coach_links for update
   using (trainee_id = auth.uid() and status = 'pending')
   with check (trainee_id = auth.uid() and status in ('pending', 'active'));

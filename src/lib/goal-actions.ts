@@ -115,6 +115,40 @@ export async function savePlan(fd: FormData) {
   goto("ok", "Норма рассчитана");
 }
 
+// Ручная правка БЖУ: себе или подопечному (тренер). Права проверяет RLS (своя строка или активный тренер).
+// Кнопка «reset» возвращает расчётные значения.
+export async function saveMacros(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const uid = String(fd.get("user_id") ?? user.id);
+  const back = (key: "error" | "ok", msg: string): never =>
+    redirect(`/goals?${uid === user.id ? "" : `user=${encodeURIComponent(uid)}&`}${key}=${encodeURIComponent(msg)}`);
+
+  const reset = fd.get("reset") !== null;
+  const get = (k: string) => (String(fd.get(k) ?? "").trim() === "" ? NaN : num(fd.get(k)));
+  const [p, f, c] = [get("protein"), get("fat"), get("carbs")];
+  if (!reset && ![p, f, c].every((v) => Number.isInteger(v) && v >= 0 && v <= 999)) {
+    back("error", "Белки, жиры и углеводы — целые числа от 0 до 999 г");
+  }
+
+  const { data, error } = await supabase
+    .from("nutrition_plans")
+    .update(reset
+      ? { custom_protein_g: null, custom_fat_g: null, custom_carbs_g: null }
+      : { custom_protein_g: p, custom_fat_g: f, custom_carbs_g: c })
+    .eq("user_id", uid)
+    .select("user_id");
+  if (error) {
+    back("error", error.code === "PGRST204" || error.code === "42703"
+      ? "Колонок нет: выполните supabase/migration_25_custom_macros.sql в Supabase"
+      : "Не удалось сохранить БЖУ: " + error.message);
+  }
+  // RLS молча отфильтровывает чужие строки — пустой ответ значит «нет доступа» или анкеты нет
+  if (!data?.length) back("error", "Нет доступа или анкета ещё не заполнена");
+
+  revalidatePath("/goals");
+  back("ok", reset ? "Возвращена расчётная норма" : "БЖУ сохранены");
+}
+
 // Удалить анкету (начать заново)
 export async function resetPlan() {
   const { supabase, user } = await requireUser();

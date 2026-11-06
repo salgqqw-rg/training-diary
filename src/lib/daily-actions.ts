@@ -64,30 +64,37 @@ const KINDS = { supplement: "Добавка", bac: "БАД", course: "Курс �
 type Kind = keyof typeof KINDS;
 
 // Добавить позицию: название и дозировка вписываются вручную
-export async function addSupplement(fd: FormData) {
+// Добавить несколько позиций за раз: форма шлёт поля по одному набору на строку (kind, name, … — одинаковой длины)
+// shortcut: не больше 30 позиций за раз, лишние отбрасываются
+export async function addSupplements(fd: FormData) {
   const { supabase, user } = await requireUser();
-  const kindRaw = String(fd.get("kind") ?? "supplement");
-  const kind: Kind = kindRaw in KINDS ? (kindRaw as Kind) : "supplement";
-  const name = String(fd.get("name") ?? "").trim().slice(0, 100);
-  if (!name) goto("error", "Укажите название", "supplements");
-  const dosage = String(fd.get("dosage") ?? "").trim().slice(0, 100) || null;
-  const startDate = String(fd.get("start_date") ?? "").trim() || null;
-  const endDate = String(fd.get("end_date") ?? "").trim() || null;
-  const note = String(fd.get("note") ?? "").trim().slice(0, 300) || null;
-  if (startDate && endDate && endDate < startDate) {
-    goto("error", "Дата окончания раньше даты начала", "supplements");
-  }
+  const [kinds, names, dosages, starts, ends, notes] = ["kind", "name", "dosage", "start_date", "end_date", "note"]
+    .map((k) => fd.getAll(k).map((v) => String(v).trim()));
 
-  const { error } = await supabase.from("supplements").insert({
-    user_id: user.id,
-    kind, name, dosage, start_date: startDate, end_date: endDate, note,
-  });
+  const rows = names
+    .map((name, i) => ({
+      user_id: user.id,
+      kind: (kinds[i] ?? "") in KINDS ? (kinds[i] as Kind) : "supplement",
+      name: name.slice(0, 100),
+      dosage: (dosages[i] ?? "").slice(0, 100) || null,
+      start_date: starts[i] || null,
+      end_date: ends[i] || null,
+      note: (notes[i] ?? "").slice(0, 300) || null,
+    }))
+    .filter((r) => r.name)
+    .slice(0, 30);
+  if (!rows.length) goto("error", "Укажите название", "supplements");
+  const bad = rows.find((r) => r.start_date && r.end_date && r.end_date < r.start_date);
+  if (bad) goto("error", `«${bad.name}»: дата окончания раньше даты начала`, "supplements");
+
+  const { error } = await supabase.from("supplements").insert(rows);
   if (error) {
     goto("error", error.code === "42P01"
       ? "Таблица не создана: выполните supabase/migration_05_supplements.sql в Supabase"
       : "Не удалось добавить: " + error.message, "supplements");
   }
   revalidatePath("/daily");
+  goto("ok", `Добавлено: ${rows.length}`, "supplements");
 }
 
 export async function deleteSupplement(fd: FormData) {

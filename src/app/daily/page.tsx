@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { today as getToday } from "@/lib/today";
-import { saveDailyLog, deleteDailyLog, addSupplement, deleteSupplement } from "@/lib/daily-actions";
+import { saveDailyLog, deleteDailyLog, deleteSupplement } from "@/lib/daily-actions";
 import { loadPlan } from "@/lib/nutrition-target";
+import { SupplementForm } from "./supplement-form";
 import { FoodDay, type MealEntryDTO } from "./food-day";
 import { Line } from "@/components/chart";
 
@@ -22,6 +23,9 @@ const KINDS: Record<string, string> = {
   bac: "БАД",
   course: "Курс ААС",
 };
+
+// Подпись над полем: поля в строке выстраиваются по нижнему краю, без «подписи слева от поля»
+const COL = { display: "flex", flexDirection: "column", gap: 5, margin: 0 } as const;
 
 const fmt = (v: unknown) => (v === null || v === undefined ? "—" : String(v));
 
@@ -135,15 +139,15 @@ export default async function DailyPage({
             Калории и БЖУ считаются автоматически из дневника питания. Повторное заполнение обновит запись.
           </p>
           <form action={saveDailyLog}>
-            <div className="row">
-              <label>Дата
-                <input name="log_date" type="date" required defaultValue={selDate} />
+            <div className="row" style={{ alignItems: "flex-end" }}>
+              <label style={COL}>Дата
+                <input name="log_date" type="date" required defaultValue={selDate} style={{ margin: 0 }} />
               </label>
-              <label>Сон, ч
-                <input name="sleep_h" type="number" step="0.1" min={0} defaultValue={dayLog ? String(dayLog.sleep_h ?? "") : ""} style={{ width: 110 }} />
+              <label style={COL}>Сон, ч
+                <input name="sleep_h" type="number" step="0.1" min={0} defaultValue={dayLog ? String(dayLog.sleep_h ?? "") : ""} style={{ width: 110, margin: 0 }} />
               </label>
-              <label>Шаги
-                <input name="steps" type="number" step="1" min={0} defaultValue={dayLog ? String(dayLog.steps ?? "") : ""} style={{ width: 130 }} />
+              <label style={COL}>Шаги
+                <input name="steps" type="number" step="1" min={0} defaultValue={dayLog ? String(dayLog.steps ?? "") : ""} style={{ width: 130, margin: 0 }} />
               </label>
             </div>
             <label style={{ marginTop: 8 }}>Заметка (самочувствие, что-то важное…)
@@ -163,37 +167,7 @@ export default async function DailyPage({
       {tab === "supplements" && (
       <div className="card">
         <h3>Добавки, БАДы и курсы</h3>
-        {canEdit && (
-          <form action={addSupplement} className="stack">
-            <div className="row">
-              <label>Тип
-                <select name="kind" defaultValue="supplement" style={{ width: "100%" }}>
-                  <option value="supplement">Добавка</option>
-                  <option value="bac">БАД</option>
-                  <option value="course">Курс ААС</option>
-                </select>
-              </label>
-              <label style={{ flex: 2 }}>Название
-                <input name="name" required maxLength={100} placeholder="Например: витамин D3" style={{ width: "100%" }} />
-              </label>
-              <label style={{ flex: 2 }}>Дозировка
-                <input name="dosage" maxLength={100} placeholder="Например: 5000 МЕ/день" style={{ width: "100%" }} />
-              </label>
-            </div>
-            <div className="row">
-              <label>Начало
-                <input name="start_date" type="date" />
-              </label>
-              <label>Окончание
-                <input name="end_date" type="date" />
-              </label>
-              <label style={{ flex: 1 }}>Заметка
-                <input name="note" maxLength={300} placeholder="Необязательно" style={{ width: "100%" }} />
-              </label>
-              <button style={{ alignSelf: "flex-end" }}>Добавить</button>
-            </div>
-          </form>
-        )}
+        {canEdit && <SupplementForm key={supplements.length} />}
         {supplements.length === 0 && <p className="muted">Пока ничего не добавлено</p>}
         {supplements.length > 0 && (
           <div style={{ overflowX: "auto" }}>

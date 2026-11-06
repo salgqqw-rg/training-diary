@@ -90,6 +90,10 @@ export const UsersIcon = (p: P) => (
   <S {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1-3.2 3.9-4.4 6.5-4.4s5.5 1.2 6.5 4.4" /><path d="M16 11.2A3 3 0 1 0 16 5" /><path d="M17.8 15.5c2 .5 3.3 1.8 3.7 4.5" /></S>
 );
 
+export const AwardIcon = (p: P) => (
+  <S {...p}><circle cx="12" cy="9" r="6" /><path d="m8.6 14-1.6 7 5-3 5 3-1.6-7" /></S>
+);
+
 export const MessageIcon = (p: P) => (
   <S {...p}><path d="M21 15a4 4 0 0 1-4 4H8l-4 3V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z" /></S>
 );

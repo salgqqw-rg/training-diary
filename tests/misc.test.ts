@@ -48,3 +48,15 @@ test("pickPrevious: берёт свежую прошлую тренировку,
   assert.deepEqual(p?.sets, [{ weight: 75, reps: 8 }, { weight: 80, reps: 8 }]); // по номеру подхода
   assert.equal(pickPrevious([row("a", "2026-10-01", "2026-10-01T00:00:00Z", 0)], "cur", null).size, 0); // подходов с весом нет
 });
+
+import { withCustomMacros, type PlanResult } from "../src/lib/nutrition.ts";
+
+test("withCustomMacros: калории — сумма БЖУ, срок не считается", () => {
+  const base = { ok: true, age: 30, bmi: 22, bmr: 1700, tdee: 2600, kcal: 2100, deltaKcal: -500,
+    protein_g: 160, fat_g: 58, carbs_g: 235, weeks: 12, clamped: true } as PlanResult;
+  const r = withCustomMacros(base, 200, 70, 250);
+  assert.equal(r.kcal, 200 * 4 + 70 * 9 + 250 * 4);
+  assert.equal(r.deltaKcal, r.kcal - 2600);
+  assert.equal(r.weeks, null);
+  assert.equal(r.clamped, false);
+});

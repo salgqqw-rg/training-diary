@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { resetPlan } from "@/lib/goal-actions";
+import { resetPlan, saveMacros } from "@/lib/goal-actions";
 import { ACTIVITY, GOALS } from "@/lib/nutrition";
 import { loadPlan } from "@/lib/nutrition-target";
 import { PlanForm, type PlanDefaults } from "./plan-form";
@@ -73,7 +73,7 @@ export default async function GoalsPage({
   return (
     <>
       <h1>Цели</h1>
-      {!isSelf && <p className="muted">Цель: <b>{target?.display_name ?? "подопечный"}</b> · режим просмотра</p>}
+      {!isSelf && <p className="muted">Цель: <b>{target?.display_name ?? "подопечный"}</b> · анкета только для просмотра, БЖУ можно менять</p>}
       {!isSelf && <p><Link href="/clients">← к подопечным</Link></p>}
       {error && <p className="danger">{error}</p>}
       {ok && <p className="up">{ok}</p>}
@@ -85,7 +85,9 @@ export default async function GoalsPage({
               <span className="plan-goal">{data.reached ? "Цель достигнута" : GOALS[data.plan.goal]}</span>
               <div className="plan-kcal">{n1(res.kcal, 0)}<small> ккал в день</small></div>
               <p className="muted" style={{ margin: "4px 0 0", fontSize: 13.5 }}>
-                {data.reached
+                {data.custom
+                  ? "БЖУ заданы вручную, калории — их сумма."
+                  : data.reached
                   ? "Вы дошли до желаемого веса — норма пересчитана на поддержание."
                   : data.plan.goal === "maintain"
                     ? "Норма для поддержания текущего веса."
@@ -97,6 +99,30 @@ export default async function GoalsPage({
               <div><span>Жиры</span><b>{res.fat_g} г</b></div>
               <div><span>Углеводы</span><b>{res.carbs_g} г</b></div>
             </div>
+          </div>
+
+          <div className="card">
+            <details className="addrow">
+              <summary>Изменить БЖУ вручную</summary>
+              <p className="muted" style={{ fontSize: 13 }}>
+                Эти значения заменят расчётные{isSelf ? "" : " для подопечного"}. Калории считаются из них: Б×4 + Ж×9 + У×4.
+              </p>
+              <form action={saveMacros}>
+                <input type="hidden" name="user_id" value={targetId} />
+                <div className="row">
+                  {([["protein", "Белки, г", res.protein_g], ["fat", "Жиры, г", res.fat_g], ["carbs", "Углеводы, г", res.carbs_g]] as const).map(([name, label, v]) => (
+                    <label key={name}>{label}
+                      <input name={name} type="number" inputMode="numeric" step={1} min={0} max={999} required
+                        defaultValue={v} style={{ width: 110 }} />
+                    </label>
+                  ))}
+                </div>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <button className="primary">Сохранить БЖУ</button>
+                  {data.custom && <button name="reset" value="1" formNoValidate className="sm">Вернуть расчётные</button>}
+                </div>
+              </form>
+            </details>
           </div>
 
           {res.clamped && !data.reached && (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PhotoInput } from "@/components/photo-input";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
@@ -61,9 +62,9 @@ function delta(cur: unknown, prev: unknown) {
 export default async function MeasurementsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ user?: string; date?: string; metric?: string; error?: string; ok?: string }>;
+  searchParams: Promise<{ user?: string; date?: string; error?: string; ok?: string; tab?: string }>;
 }) {
-  const { user: targetParam, date: editDate, metric: metricParam, error, ok } = await searchParams;
+  const { user: targetParam, date: editDate, error, ok, tab: tabParam } = await searchParams;
   const supabase = await createClient();
   const user = await getUser();
   const todayStr = await getToday();
@@ -99,7 +100,8 @@ export default async function MeasurementsPage({
   // Свежие даты сверху (measured_on; до миграции — по месяцу)
   const dayKey = (r: MeasRow) => String(r.measured_on ?? r.month ?? "").slice(0, 10);
   measurements.sort((a, b) => (dayKey(a) < dayKey(b) ? 1 : -1));
-  const photoRows = (photos ?? []) as PhotoRow[];
+  // Бакет закрытый: ссылку на фото отдаёт /api/photo
+  const photoRows = ((photos ?? []) as PhotoRow[]).map((p) => ({ ...p, url: `/api/photo?b=progress&p=${encodeURIComponent(p.path)}` }));
   const photosByMonth = new Map<string, PhotoRow[]>();
   for (const p of photoRows) {
     const list = photosByMonth.get(p.month) ?? [];
@@ -121,11 +123,17 @@ export default async function MeasurementsPage({
       .map((r) => ({ day: dayKey(r), v: r[key] === null || r[key] === undefined ? NaN : Number(r[key]) }))
       .filter((p) => Number.isFinite(p.v) && p.v > 0);
   const charts = ALL_FIELDS.filter((f) => series(f.key).length >= 2);
-  const metric = charts.find((f) => f.key === metricParam) ?? charts[0];
-  const pts = metric ? series(metric.key) : [];
   const shortDay = (d: string) => d.slice(8, 10) + "." + d.slice(5, 7);
-  const metricHref = (k: string) =>
-    `/measurements?metric=${k}${isSelf ? "" : `&user=${encodeURIComponent(targetId)}`}`;
+  const userQ = isSelf ? "" : `&user=${encodeURIComponent(targetId)}`;
+  // Разделы-вкладки; вносить замеры может только владелец. Первая вкладка — по умолчанию
+  const TABS = [
+    ...(canEdit ? [{ key: "add", label: editDate ? "Изменить замер" : "Новый замер" }] : []),
+    { key: "dynamics", label: "Динамика" },
+    { key: "history", label: "История" },
+    { key: "photos", label: "Фото формы" },
+  ];
+  const tab = TABS.find((t) => t.key === tabParam)?.key ?? TABS[0].key;
+  const tabHref = (k: string) => `/measurements?tab=${k}${userQ}`;
 
   return (
     <>
@@ -135,7 +143,13 @@ export default async function MeasurementsPage({
       {error && <p className="danger">{error}</p>}
       {ok && <p className="up">{ok}</p>}
 
-      {canEdit && (
+      <div className="workout-subtabs" role="tablist" aria-label="Разделы">
+        {TABS.map((t) => (
+          <Link key={t.key} href={tabHref(t.key)} scroll={false} role="tab" aria-selected={tab === t.key} className={tab === t.key ? "active" : undefined}>{t.label}</Link>
+        ))}
+      </div>
+
+      {tab === "add" && canEdit && (
         <div className="card">
           <h3>{editDate ? "Изменить замер" : "Новое измерение"}</h3>
           <form action={saveMeasurement}>
@@ -173,24 +187,37 @@ export default async function MeasurementsPage({
         </div>
       )}
 
-      {metric && (
+      {tab === "dynamics" && (charts.length ? (
         <div className="card">
-          <h3>Динамика: {metric.label.toLowerCase()}</h3>
-          <div className="tabs" style={{ margin: "4px 0 12px", flexWrap: "wrap" }}>
-            {charts.map((f) => (
-              <Link key={f.key} href={metricHref(f.key)} className={`tab${f.key === metric.key ? " on" : ""}`}>{f.label}</Link>
-            ))}
+          <h3>Динамика</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+            {charts.map((f) => {
+              const pts = series(f.key);
+              const last = pts.at(-1)!.v;
+              const diff = last - pts[0].v;
+              return (
+                <div key={f.key} style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "8px 10px" }}>
+                  <div className="between" style={{ gap: 6 }}>
+                    <span className="m-label">{f.label}</span>
+                    <span className={`${diff >= 0 ? "up" : "down"} m-delta`}>
+                      {diff >= 0 ? "↑" : "↓"} {Math.abs(diff).toFixed(1).replace(".", ",")}
+                    </span>
+                  </div>
+                  <b style={{ fontSize: 18 }}>{chip(last)}<small> {f.unit}</small></b>
+                  <Line values={pts.map((p) => p.v)} labels={[shortDay(pts[0].day), shortDay(pts.at(-1)!.day)]} height={170} gradId={`meas-${f.key}`} />
+                </div>
+              );
+            })}
           </div>
-          <div className="chart-head">
-            <div className="v">{chip(pts.at(-1)?.v)} {metric.unit}</div>
-            <div className={`s ${pts.at(-1)!.v >= pts[0].v ? "up" : "down"}`}>
-              {pts.at(-1)!.v >= pts[0].v ? "↑" : "↓"} {Math.abs(pts.at(-1)!.v - pts[0].v).toFixed(1).replace(".", ",")} {metric.unit} с первого замера
-            </div>
-          </div>
-          <Line values={pts.map((p) => p.v)} labels={[shortDay(pts[0].day), shortDay(pts.at(-1)!.day)]} height={220} gradId="meas" />
+          <p className="muted" style={{ fontSize: 12.5, margin: "10px 0 0" }}>
+            Изменение — с первого замера. Показаны показатели, по которым есть хотя бы два замера.
+          </p>
         </div>
-      )}
+      ) : (
+        <div className="card"><p className="muted" style={{ margin: 0 }}>Графики появятся, когда будет хотя бы два замера одного показателя.</p></div>
+      ))}
 
+      {tab === "history" && (
       <div className="card">
         <h3>История замеров</h3>
         {measurements.length === 0 && <p className="muted">Замеров пока нет</p>}
@@ -211,7 +238,7 @@ export default async function MeasurementsPage({
                 </div>
                 {canEdit && (
                   <span className="row" style={{ gap: 8 }}>
-                    <Link className="sm-link" href={`/measurements?date=${day}`}>Изменить</Link>
+                    <Link className="sm-link" href={`/measurements?tab=add&date=${day}`}>Изменить</Link>
                     <form action={deleteMeasurement}>
                       <input type="hidden" name="id" value={String(r.id)} />
                       <button className="sm danger">✕</button>
@@ -244,8 +271,9 @@ export default async function MeasurementsPage({
           );
         })}
       </div>
+      )}
 
-      {canEdit && (
+      {tab === "photos" && canEdit && (
         <div className="card">
           <h3>Фото формы</h3>
           <form action={uploadProgressPhotos} className="row photo-form">
@@ -260,12 +288,12 @@ export default async function MeasurementsPage({
                   <path d="m7 10 5 5 5-5" />
                 </svg>
                 Выбрать файлы
-                <input name="photos" type="file" accept="image/*" multiple />
+                <PhotoInput name="photos" multiple />
               </label>
             <button className="primary">Загрузить</button>
           </form>
           <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
-            До 10 МБ каждое, можно несколько
+            Фото уменьшаются автоматически. За один раз лучше добавлять не больше 4–5 штук.
           </p>
 
           {[...photosByMonth.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([m, list]) => (
@@ -291,9 +319,10 @@ export default async function MeasurementsPage({
         </div>
       )}
 
-      {!canEdit && photoRows.length > 0 && (
+      {tab === "photos" && !canEdit && (
         <div className="card">
           <h3>Фото формы</h3>
+          {photoRows.length === 0 && <p className="muted">Фото пока нет</p>}
           {[...photosByMonth.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([m, list]) => (
             <div key={m} style={{ borderTop: "1px solid var(--line)", marginTop: 8, paddingTop: 8 }}>
               <b>{monthText(m)}</b>

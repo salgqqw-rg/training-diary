@@ -51,6 +51,7 @@ export async function addMealEntry(fd: FormData) {
   const grams = num(fd, "grams");
   const ref = String(fd.get("food_ref") ?? "").trim();
   let name = String(fd.get("name") ?? "").trim().slice(0, 150);
+  const brand = String(fd.get("brand") ?? "").trim().slice(0, 50);
   let kcal100 = num(fd, "kcal100");
   let p100 = num(fd, "p100");
   let f100 = num(fd, "f100");
@@ -95,6 +96,17 @@ export async function addMealEntry(fd: FormData) {
     c100 = Number(uf.carbs_g);
   }
   if (!name) return;
+
+  if (!ref) {
+    // Ручной ввод: значения могли быть на порцию — приводим к 100 г, в базе всё хранится на 100 г
+    if (String(fd.get("per")) === "serving") {
+      const serving = num(fd, "serving");
+      if (serving <= 0) return;
+      const m = 100 / serving;
+      kcal100 *= m; p100 *= m; f100 *= m; c100 *= m;
+    }
+    if (brand) name = `${name} · ${brand}`.slice(0, 150);
+  }
 
   const k = grams / 100;
   await supabase.from("meal_entries").insert({

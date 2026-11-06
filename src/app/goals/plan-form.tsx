@@ -114,7 +114,7 @@ export function PlanForm({ defaults, submitLabel }: { defaults: PlanDefaults; su
             ))}
           </select>
           <p className="muted" style={{ fontSize: 12.5, margin: "6px 0 0" }}>
-            Безопасный темп сброса — до 1 кг в неделю, набора — до 0,5 кг.
+            Безопасный темп {goal === "lose" ? "сброса" : "набора"} — до {n1(paces[paces.length - 1], 2)} кг в неделю.
           </p>
         </fieldset>
       )}

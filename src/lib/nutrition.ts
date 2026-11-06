@@ -56,6 +56,12 @@ export type PlanResult = {
   clamped: boolean; // норма подтянута к безопасному минимуму
 };
 
+// Ручные БЖУ вместо расчётных: калории — сумма макросов, срок не считаем (темп уже не по формуле)
+export function withCustomMacros(r: PlanResult, protein: number, fat: number, carbs: number): PlanResult {
+  const kcal = protein * 4 + fat * 9 + carbs * 4;
+  return { ...r, protein_g: protein, fat_g: fat, carbs_g: carbs, kcal, deltaKcal: kcal - r.tdee, weeks: null, clamped: false };
+}
+
 export function ageOn(birth: string, now = new Date()): number {
   const b = new Date(birth + "T00:00:00Z");
   let age = now.getUTCFullYear() - b.getUTCFullYear();

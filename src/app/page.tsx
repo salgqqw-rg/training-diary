@@ -140,7 +140,7 @@ export default async function HomePage() {
           {recentRows.length ? recentRows.map((r) => (
             <Link key={r.id} href={`/cycles/${r.cycle_id}`} className="w-row">
               <span className="ico"><BoltIcon /></span>
-              <span>
+              <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
                 <b>{planName(r) ?? "План"}</b>
                 <span className="muted">{r.note ?? "Тренировка"} · {r.workout_date ?? "дата не задана"}</span>
               </span>

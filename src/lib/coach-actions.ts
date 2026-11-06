@@ -20,16 +20,13 @@ export async function inviteTrainee(fd: FormData) {
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
   if (!email) goto("error", "Укажите email подопечного");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .maybeSingle();
+  // Точное совпадение через функцию (миграция 26): email в profiles напрямую не читается
+  const { data: traineeId } = await supabase.rpc("find_user_by_email", { e: email });
 
-  if (profile) {
+  if (traineeId) {
     const { error } = await supabase
       .from("coach_links")
-      .insert({ coach_id: user.id, trainee_id: profile.id });
+      .insert({ coach_id: user.id, trainee_id: traineeId, status: "pending" });
     if (error) {
       goto("error", error.code === "23505"
         ? "Заявка уже существует: подопечный должен подтвердить её у себя"
@@ -48,16 +45,18 @@ export async function respondInvite(fd: FormData) {
   const accept = String(fd.get("answer")) === "accept";
 
   if (accept) {
-    await supabase
+    const { data: done } = await supabase
       .from("coach_links")
       .update({ status: "active" })
       .eq("id", id)
-      .eq("trainee_id", user.id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .neq("requested_by", user.id)
+      .select("id");
+    if (!done?.length) goto("error", "Не удалось принять заявку: возможно, её уже отменили");
     revalidatePath("/clients");
     revalidatePath("/", "layout");
   } else {
-    await supabase.from("coach_links").delete().eq("id", id).eq("trainee_id", user.id);
+    await supabase.from("coach_links").delete().eq("id", id).neq("requested_by", user.id);
   }
   revalidatePath("/clients");
 }

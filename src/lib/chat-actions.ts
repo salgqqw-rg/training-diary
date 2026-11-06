@@ -47,6 +47,8 @@ export async function fetchMessages(
     .limit(200);
 
   const list = (data ?? []) as ChatMessage[];
+  // Бакет закрытый: ссылку на фото отдаёт /api/photo (стабильная, чтобы опрос раз в 2,5 с не перезагружал картинки)
+  for (const m of list) if (m.image_path) m.image_url = `/api/photo?b=chat&p=${encodeURIComponent(m.image_path)}`;
   // Цитируемые сообщения одним запросом (только там, где есть reply_to)
   const quotes: Record<string, Quote> = {};
   const qIds = [...new Set(list.map((m) => m.reply_to).filter((v): v is string => Boolean(v)))];
