@@ -50,16 +50,29 @@ function Logo({ small }: { small?: boolean }) {
   );
 }
 
-const NAV_MAIN = [
-  { href: "/", label: "Главная" },
-  { href: "/diary", label: "Дневник" },
-  { href: "/exercises", label: "Упражнения" },
-  { href: "/progress", label: "Прогресс" },
-  { href: "/coaches", label: "Тренеры" },
-  { href: "/profile", label: "Профиль" },
+// Сайдбар: три группы с подписями (редизайн A)
+const NAV_GROUPS = [
+  { title: "Тренировки", items: [
+    { href: "/", label: "Главная" },
+    { href: "/diary", label: "Дневник" },
+    { href: "/exercises", label: "Упражнения" },
+    { href: "/progress", label: "Прогресс" },
+  ] },
+  { title: "Люди", items: [
+    { href: "/coaches", label: "Тренеры" },
+    { href: "/clients", label: "Подопечные" },
+    { href: "/chat", label: "Сообщения" },
+    { href: "/feed", label: "Лента" },
+  ] },
+  { title: "Я", items: [
+    { href: "/profile", label: "Профиль" },
+    { href: "/goals", label: "Цели" },
+    { href: "/daily", label: "Питание и сон" },
+    { href: "/measurements", label: "Характеристики" },
+  ] },
 ];
 
-// Доп. разделы (под разделителем — как «второй блок» сайдбара)
+// Доп. разделы — нужны для вкладки «Ещё» в нижней панели телефона
 const NAV_MORE = [
   { href: "/goals", label: "Цели" },
   { href: "/daily", label: "Питание и сон" },
@@ -123,12 +136,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <aside className="side">
             <Logo small />
             <nav>
-              {NAV_MAIN.map((n) => (
-                <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
-              ))}
-              <i className="side-div" />
-              {NAV_MORE.map((n) => (
-                <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
+              {NAV_GROUPS.map((g) => (
+                <div key={g.title} style={{ display: "contents" }}>
+                  <div className="side-label">{g.title}</div>
+                  {g.items.map((n) => (
+                    <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
+                  ))}
+                </div>
               ))}
             </nav>
             <form action={signOut} className="side-exit">

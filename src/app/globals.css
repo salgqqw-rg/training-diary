@@ -1121,3 +1121,122 @@ html[data-theme="love"] main h1::after { content: " ♥"; color: var(--acc); }
 .hearts span:nth-child(8) { left: 88%; font-size: 18px; animation-delay: 7s; animation-duration: 13s; }
 .hearts span:nth-child(9) { left: 94%; font-size: 12px; animation-delay: 5s; }
 @media (prefers-reduced-motion: reduce) { .hearts { display: none; } }
+
+
+/* ============================================================
+   Редизайн A «Эволюция» (ноябрь 2026): тот же тёмный лайм, но чище —
+   сгруппированное меню, плоские карточки, крупные цифры, понятные
+   пустые состояния. Идёт последним, поэтому перекрывает правила выше.
+   Розовая тема (data-theme="love") сохраняет прежний «скин»:
+   цвета и фон ниже заданы через переменные темы, а плоские карточки,
+   тёмный сайдбар и баннер-арт включены только для обычной темы.
+   Откат: design-backup/globals.css.txt (+ page.tsx.txt, layout.tsx.txt)
+   ============================================================ */
+
+/* ---------- Общая вёрстка (цвета — только из переменных темы) ---------- */
+.side-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); padding: 16px 12px 6px;
+}
+@media (min-width: 981px) {
+  .side { width: 248px; padding: 28px 16px 24px; gap: 4px; }
+  .logo.sm { font-size: 24px; letter-spacing: -.02em; padding: 0 12px 12px; }
+  .side nav { gap: 4px; }
+  .side nav a { min-height: 44px; padding: 0 12px; border-radius: 12px; }
+  .side nav a svg { width: 20px; height: 20px; }
+  main { padding: 40px 48px 56px; max-width: 1320px; }
+}
+@media (max-width: 980px) { .side-label { display: none; } }
+
+.home-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.home-head h1 { margin: 6px 0 4px; font-size: 52px; }
+.home-head p { margin: 0; font-size: 16px; }
+.home-head .love-msg { margin: 0; }
+.head-cta { height: 52px; padding: 0 24px; border-radius: 14px; font-size: 15px; margin-top: 0; }
+
+.dash-grid { grid-template-columns: 1.7fr 1fr; gap: 20px; margin-bottom: 20px; }
+.kpi-grid { gap: 20px; margin-bottom: 20px; }
+.dash-grid > .card { padding: 28px; }
+.dash-grid h3 { font-size: 12px; letter-spacing: .14em; color: var(--muted); margin: 0 0 14px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-head h3 { margin: 0; }
+
+.banner { min-height: 300px; padding: 36px; border-radius: 24px; gap: 14px; }
+.banner h2 { font-size: 72px; line-height: .95; max-width: 520px; }
+.banner p { font-size: 18px; }
+.banner > .banner-art { display: none; }   /* арт-штанга — только в обычной теме */
+.banner-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+.banner-actions .banner-btn { margin: 0; height: 48px; padding: 0 22px; border-radius: 12px; }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 22px; border-radius: 12px;
+  border: 1px solid rgba(var(--acc-rgb), .35); color: var(--text); font-weight: 700; font-size: 14px; text-decoration: none;
+  transition: border-color .2s, color .2s;
+}
+.btn-ghost:hover { border-color: var(--acc); color: var(--acc); }
+
+.empty-box { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 20px; border-radius: 16px; border: 1px dashed var(--line); }
+.empty-box b { font-size: 17px; font-weight: 800; }
+.empty-box p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.empty-box .btn-ghost { height: 44px; margin-top: 10px; color: var(--acc); }
+.ghost-chart { display: block; width: 100%; height: 110px; margin-bottom: 14px; }
+.ghost-chart .g1 { stroke: var(--line); }
+.ghost-chart .g2 { stroke: var(--acc); stroke-opacity: .4; }
+
+.week { margin-top: 20px; }
+.week-days { display: flex; justify-content: space-between; gap: 6px; margin-top: 10px; }
+.wd { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.wd i { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; font-style: normal; font-size: 14px; background: var(--card2); color: var(--text); border: 2px solid transparent; }
+.wd.plan i { border: 2px dashed var(--acc); }
+.wd.today { color: var(--acc); }
+.wd.today i { background: transparent; border: 2px solid var(--acc); color: var(--acc); font-weight: 800; }
+.wd.done i { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); font-weight: 800; }
+
+.kpi { padding: 22px; border-radius: 20px; }
+.kpi .t { font-size: 12px; letter-spacing: .12em; }
+.kpi .v { font-size: 48px; line-height: 1; margin: 8px 0; }
+.kpi .v.txt { font-size: 32px; line-height: 1.1; text-transform: uppercase; }
+.kpi .v.empty { color: var(--muted); }
+.kpi .v.acc { color: var(--acc); }
+.kpi .s { font-size: 14px; }
+
+.w-row { min-height: 68px; padding: 10px 12px; border-radius: 16px; }
+.w-row .ico { width: 44px; height: 44px; background: rgba(var(--acc-rgb), .12); border: none; }
+.w-row .muted { display: block; }
+.w-row .muted::first-letter { text-transform: uppercase; }
+
+@media (max-width: 980px) {
+  .home-head h1 { font-size: 36px; }
+  .head-cta { height: 48px; width: 100%; justify-content: center; }
+  .dash-grid > .card { padding: 20px; }
+  .banner { min-height: 240px; padding: 26px; }
+  .banner h2 { font-size: 48px; }
+  .banner > .banner-art { opacity: .35; width: 240px; height: 170px; }
+  .kpi .v { font-size: 36px; }
+  .kpi .v.txt { font-size: 24px; }
+}
+
+/* ---------- Скин редизайна: только обычная (не розовая) тема ---------- */
+html:not([data-theme="love"]) body::before { display: none; }   /* убрали размытую арт-сцену */
+html:not([data-theme="love"]) .card { background: #14161a; border-color: #23262c; border-radius: 20px; box-shadow: none; }
+html:not([data-theme="love"]) .kpi::before { display: none; }
+html:not([data-theme="love"]) .kpi:hover { transform: none; box-shadow: none; }
+html:not([data-theme="love"]) .banner { background: #11140d; border-color: #2a3318; box-shadow: none; }
+html:not([data-theme="love"]) .banner::before,
+html:not([data-theme="love"]) .banner::after { display: none; }
+html:not([data-theme="love"]) .banner h2 { text-shadow: none; }
+html:not([data-theme="love"]) .banner p { color: #d5d9df; }
+html:not([data-theme="love"]) .banner > .banner-art {
+  display: block; position: absolute; z-index: 0; right: 20px; bottom: 20px; width: 340px; height: 240px;
+  pointer-events: none; stroke: var(--acc);
+}
+@media (min-width: 981px) {
+  html:not([data-theme="love"]) .side { background: #0f1013; border-right-color: #1e2127; }
+  html:not([data-theme="love"]) .side nav a { color: #b6bcc6; }
+  html:not([data-theme="love"]) .side nav a:hover { transform: none; color: #fff; background: #171a1f; }
+  html:not([data-theme="love"]) .side nav a.active { color: var(--acc); background: rgba(var(--acc-rgb), .09); box-shadow: inset 3px 0 0 var(--acc); }
+  html:not([data-theme="love"]) .side nav a.active svg { filter: none; }
+}
+@media (max-width: 980px) {
+  html:not([data-theme="love"]) .banner > .banner-art { opacity: .35; width: 240px; height: 170px; }
+}
