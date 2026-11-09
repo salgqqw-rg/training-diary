@@ -11,7 +11,7 @@ async function requireUser() {
   return { supabase, user };
 }
 
-const goto = (key: "error" | "ok", msg: string, tab = "food", extra = ""): never =>
+const goto = (key: "error" | "ok", msg: string, tab = "day", extra = ""): never =>
   redirect(`/daily?tab=${tab}${extra}&${key}=${encodeURIComponent(msg)}`);
 
 // КБЖУ за день теперь считаются автоматически из приёмов пищи (food-actions),
@@ -24,7 +24,7 @@ const NUMERIC_FIELDS = [
 export async function saveDailyLog(fd: FormData) {
   const { supabase, user } = await requireUser();
   const date = String(fd.get("log_date") ?? "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) goto("error", "Выберите дату", "sleep");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) goto("error", "Выберите дату");
 
   const record: Record<string, string | number | null> = {
     user_id: user.id,
@@ -35,17 +35,51 @@ export async function saveDailyLog(fd: FormData) {
     const raw = String(fd.get(f) ?? "").trim().replace(",", ".");
     record[f] = raw === "" ? null : Number(raw);
     if (record[f] !== null && Number.isNaN(record[f] as number)) {
-      goto("error", "Некорректное число в одном из полей", "sleep", `&date=${date}`);
+      goto("error", "Некорректное число в одном из полей", "day", `&date=${date}`);
     }
   }
 
   const { error } = await supabase
     .from("daily_logs")
     .upsert(record, { onConflict: "user_id,log_date" });
-  if (error) goto("error", "Не удалось сохранить запись: " + error.message, "sleep", `&date=${date}`);
+  if (error) goto("error", "Не удалось сохранить запись: " + error.message, "day", `&date=${date}`);
 
   revalidatePath("/daily");
-  goto("ok", `Запись за ${date} сохранена`, "sleep", `&date=${date}`);
+  goto("ok", `Запись за ${date} сохранена`, "day", `&date=${date}`);
+}
+
+// Вода: прибавить или убавить миллилитры (кнопки +250 / +500 / −250), итог держится в пределах 0—20 л
+export async function addWater(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const date = String(fd.get("log_date") ?? "").trim();
+  const delta = Math.trunc(Number(fd.get("delta")));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(delta) || Math.abs(delta) > 2000) return;
+  const { data: cur } = await supabase.from("daily_logs").select("water_ml").eq("user_id", user.id).eq("log_date", date).maybeSingle();
+  const water_ml = Math.min(20000, Math.max(0, Number(cur?.water_ml ?? 0) + delta));
+  const { error } = await supabase.from("daily_logs").upsert({ user_id: user.id, log_date: date, water_ml }, { onConflict: "user_id,log_date" });
+  if (error) {
+    goto("error", error.code === "42703"
+      ? "Нет колонки воды: выполните supabase/migration_28_water_and_supplement_checks.sql в Supabase"
+      : "Не удалось сохранить воду: " + error.message, "day", `&date=${date}`);
+  }
+  revalidatePath("/daily");
+}
+
+// Отметка «принял» у добавки на день: есть отметка — снимаем, нет — ставим
+export async function toggleSupplementCheck(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const date = String(fd.get("log_date") ?? "").trim();
+  const id = String(fd.get("supplement_id") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !id) return;
+  const { error } = fd.get("checked") === "1"
+    ? await supabase.from("supplement_checks").delete().eq("supplement_id", id).eq("log_date", date).eq("user_id", user.id)
+    : await supabase.from("supplement_checks").insert({ supplement_id: id, user_id: user.id, log_date: date });
+  if (error) {
+    goto("error", error.code === "42P01"
+      ? "Таблица не создана: выполните supabase/migration_28_water_and_supplement_checks.sql в Supabase"
+      : "Не удалось сохранить отметку: " + error.message, "day", `&date=${date}`);
+  }
+  revalidatePath("/daily");
 }
 
 export async function deleteDailyLog(fd: FormData) {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fatSecretFood } from "@/lib/fatsecret";
+import { scaleMeal } from "@/lib/daily-math";
 
 const MEALS = new Set(["breakfast", "lunch", "dinner", "snack"]);
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -151,5 +152,62 @@ export async function deleteMealEntry(fd: FormData) {
     .eq("id", String(fd.get("id") ?? ""))
     .eq("user_id", user.id);
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) await syncDayLog(supabase, user.id, date);
+  revalidatePath("/daily");
+}
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ENTRY_COLS = "meal, name, grams, kcal, protein_g, fat_g, carbs_g";
+
+// Изменить массу уже добавленного продукта: КБЖУ пересчитываются пропорционально
+export async function updateMealEntry(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const date = String(fd.get("log_date") ?? "").trim();
+  const grams = num(fd, "grams");
+  if (!DATE.test(date) || grams <= 0 || grams > 10000) return;
+  const { data: e } = await supabase
+    .from("meal_entries")
+    .select("grams, kcal, protein_g, fat_g, carbs_g")
+    .eq("id", String(fd.get("id") ?? ""))
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!e) return;
+  const n = scaleMeal({ grams: Number(e.grams), kcal: Number(e.kcal), protein_g: Number(e.protein_g), fat_g: Number(e.fat_g), carbs_g: Number(e.carbs_g) }, grams);
+  await supabase.from("meal_entries").update(n).eq("id", String(fd.get("id"))).eq("user_id", user.id);
+  await syncDayLog(supabase, user.id, date);
+  revalidatePath("/daily");
+}
+
+// Повторить продукт из недавних: та же запись, тот же вес, выбранные день и приём
+export async function repeatMealEntry(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const date = String(fd.get("log_date") ?? "").trim();
+  const meal = String(fd.get("meal") ?? "");
+  if (!DATE.test(date) || !MEALS.has(meal)) return;
+  const { data: e } = await supabase
+    .from("meal_entries")
+    .select(ENTRY_COLS)
+    .eq("id", String(fd.get("id") ?? ""))
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!e) return;
+  await supabase.from("meal_entries").insert({ ...e, user_id: user.id, log_date: date, meal });
+  await syncDayLog(supabase, user.id, date);
+  revalidatePath("/daily");
+}
+
+// Скопировать приём пищи (или весь день, если meal пустой) с другой даты
+// shortcut: до 100 записей за раз; повторное нажатие создаст дубли, защиты нет
+export async function copyMeals(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const from = String(fd.get("from") ?? "").trim();
+  const to = String(fd.get("log_date") ?? "").trim();
+  const meal = String(fd.get("meal") ?? "");
+  if (!DATE.test(from) || !DATE.test(to) || from === to || (meal && !MEALS.has(meal))) return;
+  let q = supabase.from("meal_entries").select(ENTRY_COLS).eq("user_id", user.id).eq("log_date", from);
+  if (meal) q = q.eq("meal", meal);
+  const { data: rows } = await q.order("created_at").limit(100);
+  if (!rows?.length) return;
+  await supabase.from("meal_entries").insert(rows.map((r) => ({ ...r, user_id: user.id, log_date: to })));
+  await syncDayLog(supabase, user.id, to);
   revalidatePath("/daily");
 }
