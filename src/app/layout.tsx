@@ -63,12 +63,12 @@ const NAV = [
 ];
 
 // Нижняя панель телефона (меньше 980px): четыре раздела и крупная кнопка «Старт» по центру.
-// Всё остальное (питание, тело, чат, профиль) собрано на странице «Ещё».
+// Всё остальное (прогресс, тело, чат, профиль) собрано на странице «Ещё».
 const NAV_BOTTOM = [
   { href: "/", label: "Главная" },
   { href: "/diary", label: "Тренировки", also: ["/exercises", "/feed", "/cycles"], icon: <DumbbellIcon /> },
-  { href: "/progress", label: "Прогресс" },
-  { href: "/more", label: "Ещё", also: ["/daily", "/measurements", "/goals", "/chat", "/coaches", "/clients", "/profile"] },
+  { href: "/daily", label: "Питание и сон" },
+  { href: "/more", label: "Ещё", also: ["/progress", "/measurements", "/goals", "/chat", "/coaches", "/clients", "/profile"] },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

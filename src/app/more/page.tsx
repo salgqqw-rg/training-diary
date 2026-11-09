@@ -4,13 +4,13 @@ import { getUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth-actions";
 import { createClient } from "@/lib/supabase/server";
 import {
-  FlameIcon, RulerIcon, TargetIcon, MessageIcon, UsersIcon, AwardIcon, UserIcon, LogoutIcon,
+  TrendIcon, RulerIcon, TargetIcon, MessageIcon, UsersIcon, AwardIcon, UserIcon, LogoutIcon,
 } from "@/components/icons";
 import { UnreadBadge } from "@/components/unread";
 
 // «Ещё» на телефоне: разделы, которым не хватило места в нижней панели (те же, что в меню на компьютере)
 const LINKS = [
-  { href: "/daily", label: "Питание и сон", hint: "БЖУ, шаги, сон", icon: <FlameIcon /> },
+  { href: "/progress", label: "Прогресс", hint: "Графики, рекорды, объём", icon: <TrendIcon /> },
   { href: "/measurements", label: "Характеристики", hint: "Замеры и фото формы", icon: <RulerIcon /> },
   { href: "/goals", label: "Цели", hint: "Что и к какому сроку", icon: <TargetIcon /> },
   { href: "/chat", label: "Сообщения", hint: "Тренер и подопечные", icon: <MessageIcon /> },
