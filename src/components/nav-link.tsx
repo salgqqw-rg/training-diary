@@ -25,12 +25,12 @@ const ICONS: Record<string, React.ReactNode> = {
   "/more": <ListIcon />,
 };
 
-export function NavLink({ href, children, also = [] }: { href: string; children: React.ReactNode; also?: string[] }) {
+export function NavLink({ href, children, also = [], icon }: { href: string; children: React.ReactNode; also?: string[]; icon?: React.ReactNode }) {
   const pathname = usePathname();
   const active = href === "/" ? pathname === "/" : [href, ...also].some((p) => pathname.startsWith(p));
   return (
     <Link href={href} className={active ? "active" : undefined} aria-current={active ? "page" : undefined}>
-      {ICONS[href] ?? null}
+      {icon ?? ICONS[href] ?? null}
       <span>{children}</span>
       {(href === "/chat" || href === "/more") && <UnreadBadge />}
     </Link>

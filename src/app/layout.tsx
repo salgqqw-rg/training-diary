@@ -6,7 +6,9 @@ import { Manrope, Oswald } from "next/font/google";
 import { getUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth-actions";
 import { NavLink } from "@/components/nav-link";
-import { LogoutIcon } from "@/components/icons";
+import { LogoutIcon, BoltIcon, DumbbellIcon } from "@/components/icons";
+import { SectionTabs } from "@/components/section-tabs";
+import { createClient } from "@/lib/supabase/server";
 import { TzSync } from "@/components/tz-sync";
 import { UnreadWatcher } from "@/components/unread";
 import { isLove } from "@/lib/love";
@@ -50,45 +52,23 @@ function Logo({ small }: { small?: boolean }) {
   );
 }
 
-// Сайдбар: три группы с подписями (редизайн A)
-const NAV_GROUPS = [
-  { title: "Тренировки", items: [
-    { href: "/", label: "Главная" },
-    { href: "/diary", label: "Дневник" },
-    { href: "/exercises", label: "Упражнения" },
-    { href: "/progress", label: "Прогресс" },
-  ] },
-  { title: "Люди", items: [
-    { href: "/coaches", label: "Тренеры" },
-    { href: "/clients", label: "Подопечные" },
-    { href: "/chat", label: "Сообщения" },
-    { href: "/feed", label: "Лента" },
-  ] },
-  { title: "Я", items: [
-    { href: "/profile", label: "Профиль" },
-    { href: "/goals", label: "Цели" },
-    { href: "/daily", label: "Питание и сон" },
-    { href: "/measurements", label: "Характеристики" },
-  ] },
-];
-
-// Доп. разделы — нужны для вкладки «Ещё» в нижней панели телефона
-const NAV_MORE = [
-  { href: "/goals", label: "Цели" },
+// Сайдбар: шесть разделов. Подразделы открываются вкладками внутри (SectionTabs).
+const NAV = [
+  { href: "/", label: "Главная" },
+  { href: "/diary", label: "Тренировки", also: ["/exercises", "/feed", "/cycles"], icon: <DumbbellIcon /> },
+  { href: "/progress", label: "Прогресс" },
   { href: "/daily", label: "Питание и сон" },
-  { href: "/measurements", label: "Характеристики" },
-  { href: "/clients", label: "Подопечные" },
-  { href: "/chat", label: "Сообщения" },
-  { href: "/feed", label: "Лента" },
+  { href: "/measurements", label: "Тело и цели", also: ["/goals"] },
+  { href: "/chat", label: "Тренер и чат", also: ["/coaches", "/clients"] },
 ];
 
-// Нижняя панель табов — только на телефоне (меньше 980px)
+// Нижняя панель телефона (меньше 980px): четыре раздела и крупная кнопка «Старт» по центру.
+// Всё остальное (питание, тело, чат, профиль) собрано на странице «Ещё».
 const NAV_BOTTOM = [
   { href: "/", label: "Главная" },
-  { href: "/diary", label: "Дневник" },
-  { href: "/exercises", label: "Упражнения" },
+  { href: "/diary", label: "Тренировки", also: ["/exercises", "/feed", "/cycles"], icon: <DumbbellIcon /> },
   { href: "/progress", label: "Прогресс" },
-  { href: "/more", label: "Ещё", also: ["/profile", "/coaches", ...NAV_MORE.map((n) => n.href)] },
+  { href: "/more", label: "Ещё", also: ["/daily", "/measurements", "/goals", "/chat", "/coaches", "/clients", "/profile"] },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -122,6 +102,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   const love = isLove(user.email);
+
+  // Имя для карточки пользователя и адрес кнопки «Начать тренировку» (последняя программа)
+  const supabase = await createClient();
+  const [{ data: profile }, { data: lastCycle }] = await Promise.all([
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    supabase.from("cycles").select("id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const name = profile?.display_name || user.email?.split("@")[0] || "Профиль";
+  const startHref = lastCycle ? `/cycles/${lastCycle.id}` : "/diary";
+
   return (
     <html lang="ru" className={`${manrope.variable} ${oswald.variable}`} data-theme={love ? "love" : undefined}>
       <body>
@@ -135,24 +125,30 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="shell">
           <aside className="side">
             <Logo small />
+            <Link href={startHref} className="side-cta"><BoltIcon />Начать тренировку</Link>
             <nav>
-              {NAV_GROUPS.map((g) => (
-                <div key={g.title} style={{ display: "contents" }}>
-                  <div className="side-label">{g.title}</div>
-                  {g.items.map((n) => (
-                    <NavLink key={n.href} href={n.href}>{n.label}</NavLink>
-                  ))}
-                </div>
+              {NAV.map((n) => (
+                <NavLink key={n.href} href={n.href} also={n.also} icon={n.icon}>{n.label}</NavLink>
               ))}
             </nav>
-            <form action={signOut} className="side-exit">
-              <button><LogoutIcon />Выход</button>
-            </form>
+            <div className="side-me">
+              <Link href="/profile" className="me-link" aria-label="Профиль">
+                <span className="me-av" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
+                <span className="me-who"><b>{name}</b><small>Профиль</small></span>
+              </Link>
+              <form action={signOut} className="side-exit">
+                <button aria-label="Выйти"><LogoutIcon /></button>
+              </form>
+            </div>
           </aside>
-          <main>{children}</main>
+          <main><SectionTabs />{children}</main>
         </div>
         <nav className="bottom-nav" aria-label="Мобильная навигация">
-          {NAV_BOTTOM.map((n) => (
+          {NAV_BOTTOM.slice(0, 2).map((n) => (
+            <NavLink key={n.href} href={n.href} also={n.also} icon={n.icon}>{n.label}</NavLink>
+          ))}
+          <Link href={startHref} className="bn-start" aria-label="Начать тренировку"><BoltIcon /></Link>
+          {NAV_BOTTOM.slice(2).map((n) => (
             <NavLink key={n.href} href={n.href} also={n.also}>{n.label}</NavLink>
           ))}
         </nav>

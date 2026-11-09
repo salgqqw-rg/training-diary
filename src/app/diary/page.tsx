@@ -19,7 +19,7 @@ export default async function DiaryPage() {
 
   return (
     <>
-      <h1>Дневник</h1>
+      <h1>Программы</h1>
 
       <div className="card">
         <h3>Новый цикл</h3>

@@ -1249,3 +1249,208 @@ html:not([data-theme="love"]) .banner > .banner-art {
 @media (max-width: 980px) {
   html:not([data-theme="love"]) .banner > .banner-art { display: none; }   /* на телефоне арт перекрывает текст */
 }
+
+
+/* ============================================================
+   Редизайн B (ноябрь 2026): меню из шести разделов, вкладки внутри
+   разделов, карточка пользователя, спокойная главная без баннера.
+   Идёт последним и перекрывает правила выше; цвета только из переменных
+   темы, поэтому розовая тема (data-theme="love") работает без правок.
+   ============================================================ */
+
+/* ---------- Сайдбар: кнопка старта и карточка пользователя ---------- */
+.side-cta {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 44px; margin: 2px 0 14px; border-radius: 12px;
+  background: var(--acc); color: var(--acc-ink);
+  font-weight: 800; font-size: 14px; text-decoration: none; transition: background .15s;
+}
+.side-cta:hover { background: var(--acc-hi); color: var(--acc-ink); }
+.side-me {
+  margin-top: auto; display: flex; align-items: center; gap: 6px; padding: 8px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+}
+.me-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; }
+.me-link:hover { color: var(--text); }
+.me-av {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 800; font-size: 14px; color: var(--acc); border: 1px solid var(--acc); background: var(--card2);
+}
+.me-who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.me-who b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-who small { color: var(--muted); font-size: 12px; }
+@media (min-width: 981px) {
+  .side-me .side-exit { margin: 0; }
+  .side-me .side-exit button { width: auto; min-height: 36px; padding: 8px; font-size: 0; gap: 0; }
+}
+@media (max-width: 980px) {
+  .side-cta, .me-link { display: none; }   /* на телефоне шапка: логотип и выход */
+  .side-me { display: contents; }
+}
+
+/* ---------- Вкладки внутри раздела (SectionTabs) ---------- */
+.sec-tabs { display: flex; gap: 4px; margin: 0 0 22px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.sec-tabs a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; margin-bottom: -1px;
+  border-bottom: 2px solid transparent; color: var(--muted); font-weight: 700; font-size: 14.5px;
+  text-decoration: none; white-space: nowrap; transition: color .15s;
+}
+.sec-tabs a:hover { color: var(--text); }
+.sec-tabs a.on { color: var(--text); border-bottom-color: var(--acc); }
+/* заголовок страницы остаётся над вкладками (h1 — прямой потомок main) */
+main:has(> .sec-tabs) { display: flex; flex-direction: column; }
+main:has(> .sec-tabs) > h1 { order: -1; }
+
+/* ---------- Главная ---------- */
+.home-head { margin-bottom: 22px; }
+.home-head h1 { font-size: 34px; }
+.home-head .btn-ghost { height: 42px; }
+.banner-actions .banner-btn { gap: 8px; }
+
+.h-top { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.h-chip {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 13px;
+  font-size: 12.5px; font-weight: 800; background: rgba(var(--acc-rgb), .14); color: var(--acc-soft);
+}
+.h-title { margin: 12px 0 4px; font-size: 28px; }
+.h-exl { list-style: none; margin: 16px 0 20px; padding: 0; }
+.h-exl li {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr) auto 84px; gap: 12px; align-items: center;
+  padding: 11px 0; border-top: 1px solid var(--line); font-size: 15px;
+}
+.h-n { width: 26px; height: 26px; border-radius: 8px; background: var(--card2); color: var(--muted); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.h-kg { text-align: right; font-family: var(--font-display); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.h-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 8px 0; margin-bottom: 20px; overflow: hidden; }
+.h-kpi {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 14px 26px;
+  border-left: 1px solid var(--line); color: var(--text); text-decoration: none; transition: background .15s;
+}
+.h-kpi:first-child { border-left: 0; }
+.h-kpi:hover { background: rgba(var(--acc-rgb), .05); color: var(--text); }
+.h-kpi .t { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.h-kpi .v { margin: 4px 0 2px; font-family: var(--font-display); font-weight: 600; font-size: 34px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.h-kpi .v.txt { font-size: 26px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-kpi .v.empty { color: var(--muted); }
+.h-kpi .v.acc { color: var(--acc); }
+.h-kpi .s { font-size: 13.5px; color: var(--muted); }
+.h-kpi .s.up { color: var(--acc); }
+.h-kpi .s.down { color: var(--danger); }
+
+.h-rec { display: flex; align-items: center; gap: 12px; padding: 11px 6px; border-top: 1px solid var(--line); }
+.card-head + .h-rec { border-top: 0; }
+.h-rec .ico {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px; display: grid; place-items: center;
+  background: rgba(var(--acc-rgb), .14); color: var(--acc);
+}
+.h-rec b { font-size: 14.5px; }
+.h-rec .muted { font-size: 13px; }
+.h-rec .h-kg { margin-left: auto; }
+
+@media (max-width: 980px) {
+  .home-head h1 { font-size: 28px; }
+  .h-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px 0; }
+  .h-kpi { padding: 12px 16px; }
+  .h-kpi:nth-child(odd) { border-left: 0; }
+  .h-kpi:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .h-kpi .v { font-size: 28px; }
+  .h-kpi .v.txt { font-size: 22px; }
+  .h-title { font-size: 24px; }
+}
+
+/* ---------- Личные стикеры в шапке главной (только розовая тема) ---------- */
+.home-aside { display: flex; align-items: flex-end; gap: 18px; }
+.love-sticker { height: 150px; width: auto; filter: drop-shadow(0 8px 20px rgba(0, 0, 0, .45)); }
+@media (max-width: 980px) {
+  .love-sticker { height: 96px; }
+  .home-aside { width: 100%; justify-content: space-between; }
+}
+
+/* Главная: правая колонка из двух карточек, заголовок тренировки без акцентной полоски */
+.h-title::before { display: none; }
+.h-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.h-col > .card { margin-bottom: 0; padding: 28px; }
+.h-col > .card:last-child { flex: 1; }
+.h-wide { padding: 28px; }
+.h-wide h3 { margin: 0; font-size: 12px; letter-spacing: .14em; color: var(--muted); }
+
+/* ============================================================
+   Редизайн B — телефон (до 980px): шапка из логотипа и аватара,
+   нижняя панель с кнопкой «Старт», «Ещё» как список, вкладки раздела
+   на всю ширину, компактная главная.
+   ============================================================ */
+
+/* «Ещё»: карточка профиля и список разделов (на любом экране) */
+.more-me {
+  display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 14px;
+  border: 1px solid var(--line); border-radius: 16px; background: var(--card);
+  color: var(--text); text-decoration: none;
+}
+.more-me:hover { color: var(--text); border-color: rgba(var(--acc-rgb), .4); }
+.more-me .me-av { width: 44px; height: 44px; font-size: 17px; }
+.more-me .me-who { flex: 1; }
+.more-me .me-who b { font-size: 16px; }
+.more-me > svg { color: var(--muted); flex-shrink: 0; }
+.more-list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 16px; background: var(--card); overflow: hidden; }
+.more-list a {
+  display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 10px 14px;
+  border-top: 1px solid var(--line); color: var(--text); text-decoration: none;
+}
+.more-list a:first-child { border-top: 0; }
+.more-list a:active, .more-list a:hover { background: rgba(var(--acc-rgb), .06); color: var(--text); }
+.more-list .ico {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center;
+  background: rgba(var(--acc-rgb), .14); color: var(--acc);
+}
+.more-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.more-t b { font-size: 15px; }
+.more-t small { color: var(--muted); font-size: 13px; }
+.more-list .nav-badge { position: static; margin-left: auto; }
+.bn-start { display: none; }
+
+@media (max-width: 980px) {
+  /* Шапка: логотип слева, аватар справа (выход переехал в «Ещё»), отступ под вырез экрана */
+  .side { padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px; min-height: 52px; }
+  .side-me { display: contents; }
+  .side-me .side-exit { display: none; }
+  .me-link { display: flex; flex: none; margin-left: auto; }
+  .side .me-who { display: none; }
+  .side .me-av { width: 36px; height: 36px; }
+
+  /* Нижняя панель: четыре раздела и кнопка «Старт» по центру */
+  .bottom-nav { padding: 4px 6px; min-height: calc(62px + env(safe-area-inset-bottom, 0px)); align-items: stretch; }
+  .bottom-nav a { font-size: 11px; gap: 4px; min-height: 52px; border-radius: 12px; }
+  .bottom-nav a.active { background: none; }
+  .bottom-nav a.active svg { transform: translateY(-1px); }
+  .bottom-nav .bn-start {
+    display: grid; place-items: center; flex: none; align-self: flex-start;
+    width: 56px; height: 56px; margin: -18px 6px 0; padding: 0; border-radius: 50%;
+    background: var(--acc); color: var(--acc-ink);
+    box-shadow: 0 0 0 5px rgba(8, 8, 10, .97), 0 8px 20px rgba(var(--acc-rgb), .35);
+  }
+  .bottom-nav .bn-start svg { width: 24px; height: 24px; }
+  .bottom-nav .bn-start:active { transform: scale(.94); }
+  .bottom-nav .nav-badge { right: calc(50% - 22px); }
+
+  main { padding: 14px 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .rest-timer { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Вкладки раздела — на всю ширину экрана, листаются пальцем */
+  .sec-tabs { margin: 0 -14px 16px; padding: 0 10px; }
+  .sec-tabs a { padding: 0 12px; font-size: 14px; }
+
+  /* Главная */
+  .home-head { display: block; }
+  .home-head h1 { font-size: 26px; }
+  .home-head .home-aside { margin-top: 10px; align-items: center; gap: 12px; }
+  .home-head .love-sticker { order: 2; }
+  .home-head .btn-ghost { flex: 1; justify-content: center; height: 44px; }
+  .h-title { font-size: 22px; }
+  .h-exl { margin: 12px 0 16px; }
+  .h-exl li { grid-template-columns: 24px minmax(0, 1fr) auto 66px; gap: 8px; padding: 10px 0; font-size: 14px; }
+  .h-kg { font-size: 15px; }
+  .h-col { gap: 12px; }
+  .h-col > .card, .h-wide, .dash-grid > .card { padding: 18px; }
+  .h-kpi .t { font-size: 11px; }
+  .banner-actions .banner-btn, .banner-actions .btn-ghost { min-height: 48px; }
+}

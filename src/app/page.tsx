@@ -6,8 +6,9 @@ import { isLove } from "@/lib/love";
 import { today as getToday } from "@/lib/today";
 import { shiftDay } from "@/lib/dates";
 import { Line } from "@/components/chart";
-import { fetchAll } from "@/lib/fetch-all";
-import { ChevronIcon, BoltIcon, CalendarIcon } from "@/components/icons";
+import { loadUserSets } from "@/lib/user-sets";
+import { newRecords } from "@/lib/analytics";
+import { ChevronIcon, BoltIcon, CalendarIcon, AwardIcon } from "@/components/icons";
 
 const fmt = (n: number, max = 1) =>
   n.toLocaleString("ru-RU", { maximumFractionDigits: max });
@@ -18,15 +19,20 @@ const dayLabel = (iso: string) =>
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
+type WoRow = { id: string; workout_date: string | null; note: string | null; cycle_id: string; week_number: number; cycles: unknown };
+const WO_SELECT = "id, workout_date, note, cycle_id, week_number, cycles(name)";
+const woHref = (w: { cycle_id: string; week_number: number; id: string }) => `/cycles/${w.cycle_id}?week=${w.week_number}&workout=${w.id}`;
+
 export default async function HomePage() {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: cycles }, { data: measures }] = await Promise.all([
+  const [{ data: profile }, { data: cycles }, { data: measures }, allSets] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
     supabase.from("cycles").select("id, name, weeks_count").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase.from("measurements").select("weight, measured_on").eq("user_id", user.id).order("measured_on"),
+    loadUserSets(supabase, user.id), // постранично: у Supabase лимит 1000 строк на запрос
   ]);
 
   const name = profile?.display_name ?? "чемпион";
@@ -37,37 +43,42 @@ export default async function HomePage() {
   const d30 = shiftDay(today, -30);
   const d60 = shiftDay(today, -60);
 
-  // Текущая неделя (пн–вс) для ленты на карточке «Ближайшая тренировка»
+  // Текущая неделя (пн–вс) для ленты на карточке «Сегодня»
   const weekStart = shiftDay(today, -((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7));
   const weekDays = Array.from({ length: 7 }, (_, i) => shiftDay(weekStart, i));
   const headDate = new Date(`${today}T00:00:00Z`)
     .toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
-  type SetRow = { weight: number; reps: number; created_at: string };
-  const [recentRes, nextRes, sets, countRes, weekRes] = ids.length
+  const [recentRes, nextRes, countRes, weekRes] = ids.length
     ? await Promise.all([
-        supabase.from("workouts").select("id, workout_date, note, cycle_id, cycles(name)")
+        supabase.from("workouts").select(WO_SELECT)
           .in("cycle_id", ids).order("workout_date", { ascending: false, nullsFirst: false }).limit(5),
-        supabase.from("workouts").select("id, workout_date, note, cycle_id, cycles(name)")
+        supabase.from("workouts").select(WO_SELECT)
           .in("cycle_id", ids).gte("workout_date", today).order("workout_date").limit(1),
-        // постранично: у Supabase лимит 1000 строк на запрос
-        fetchAll<SetRow>((from, to) =>
-          supabase.from("workout_sets").select("weight, reps, created_at").in("cycle_id", ids)
-            .gte("created_at", d60).order("id").range(from, to)),
         // проведённые: дата не позже сегодня (или не указана); будущие планы не считаем
         supabase.from("workouts").select("id", { count: "exact", head: true }).in("cycle_id", ids)
           .or(`workout_date.is.null,workout_date.lte.${today}`),
         supabase.from("workouts").select("workout_date").in("cycle_id", ids)
           .gte("workout_date", weekDays[0]).lte("workout_date", weekDays[6]),
       ])
-    : ([null, null, [] as SetRow[], null, null] as const);
-  const recent = recentRes?.data ?? null;
-  const next = nextRes?.data ?? null;
+    : ([null, null, null, null] as const);
+  const recentRows = (recentRes?.data ?? []) as WoRow[];
+  const nextRow = ((nextRes?.data ?? []) as WoRow[])[0] ?? null;
   const wCount = countRes?.count ?? null;
   const weekDates = new Set(((weekRes?.data ?? []) as { workout_date: string | null }[]).map((w) => w.workout_date));
 
   const planName = (r: { cycles: unknown }) =>
     (Array.isArray(r.cycles) ? r.cycles[0]?.name : (r.cycles as { name?: string } | null)?.name);
+
+  // Упражнения ближайшей тренировки: порядок из базы, подходы и вес из плана
+  const { data: nextEx } = nextRow
+    ? await supabase.from("exercises").select("name").eq("workout_id", nextRow.id).order("created_at")
+    : { data: null };
+  const plan = ((nextEx ?? []) as { name: string }[]).map((e) => {
+    const ss = allSets.filter((s) => s.workoutId === nextRow?.id && s.name === e.name).sort((a, b) => a.setNumber - b.setNumber);
+    return { name: e.name, n: ss.length, reps: ss[0]?.reps ?? 0, kg: Math.max(0, ...ss.map((s) => s.weight)) };
+  });
+  const planSets = plan.reduce((t, p) => t + p.n, 0);
 
   // Вес: история, текущий, дельта
   const weights = (measures ?? []).map((m) => Number(m.weight)).filter((w) => w > 0);
@@ -77,20 +88,23 @@ export default async function HomePage() {
   const gainPct = wFirst && wLast && wFirst !== wLast
     ? ((wLast - wFirst) / wFirst) * 100 : null;
 
-  // Объём и подходы за последние / предыдущие 30 дней
-  const stat = (sets ?? []) as { weight: number; reps: number; created_at: string }[];
-  const inRange = (s: { created_at: string }, a: string, b: string) =>
-    s.created_at.slice(0, 10) >= a && s.created_at.slice(0, 10) < b;
-  const cur30 = stat.filter((s) => inRange(s, d30, "9999-12-31"));
-  const prev30 = stat.filter((s) => inRange(s, d60, d30));
-  const vol = (arr: typeof stat) => arr.reduce((t, s) => t + Number(s.weight) * Number(s.reps), 0);
+  // Только прошедшие подходы с весом: плановые веса будущих тренировок в объём не входят
+  const facts = allSets.filter((s) => s.weight > 0 && s.reps > 0 && s.date <= today);
+  const vol = (arr: typeof facts) => arr.reduce((t, s) => t + s.weight * s.reps, 0);
+  const cur30 = facts.filter((s) => s.date >= d30);
+  const prev30 = facts.filter((s) => s.date >= d60 && s.date < d30);
   const volPct = prev30.length && cur30.length ? ((vol(cur30) - vol(prev30)) / vol(prev30)) * 100 : null;
+  const volByWorkout = new Map<string, number>();
+  for (const s of facts) if (s.workoutId) volByWorkout.set(s.workoutId, (volByWorkout.get(s.workoutId) ?? 0) + s.weight * s.reps);
+  const records = newRecords(facts, d30).slice(0, 3);
 
-  const recentRows = (recent ?? []) as { id: string; workout_date: string | null; note: string | null; cycle_id: string; cycles: unknown }[];
-  const nextRow = ((next ?? []) as typeof recentRows)[0] ?? null;
+  // Куда ведёт главная кнопка: ближайшая тренировка → текущая программа → Программы
+  const startHref = nextRow ? woHref(nextRow) : cycle ? `/cycles/${cycle.id}` : "/diary";
+  const weekOfCycle = cycle && nextRow?.cycle_id === cycle.id ? nextRow.week_number : null;
 
-  // Куда ведёт главная кнопка: ближайшая тренировка → текущая программа → Дневник
-  const startHref = nextRow ? `/cycles/${nextRow.cycle_id}` : cycle ? `/cycles/${cycle.id}` : "/diary";
+  // Личные стикеры розовой темы: каждый день один из трёх (public/love/1-3.webp)
+  const love = isLove(user.email);
+  const sticker = `/love/${(Number(today.slice(8)) % 3) + 1}.webp`;
 
   return (
     <>
@@ -98,51 +112,47 @@ export default async function HomePage() {
         <div>
           <div className="eyebrow">{headDate}</div>
           <h1>Привет, {name}</h1>
-          {isLove(user.email)
+          {love
             ? <p className="love-msg">Я тебя очень сильно люблю, котенок! ♥♥♥</p>
             : <p className="muted">Продолжай — ты на правильном пути!</p>}
         </div>
-        <Link href={startHref} className="banner-btn head-cta"><BoltIcon />Начать тренировку</Link>
+        <div className="home-aside">
+          {love && <img className="love-sticker" src={sticker} alt="" />}
+          <Link href="/diary" className="btn-ghost"><CalendarIcon />Запланировать</Link>
+        </div>
       </header>
 
       <div className="dash-grid">
-        <aside className="banner">
-          <svg className="banner-art" viewBox="0 0 340 240" fill="none" strokeOpacity=".38" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <circle cx="170" cy="120" r="108" strokeOpacity=".12" />
-            <circle cx="170" cy="120" r="74" strokeOpacity=".16" />
-            <path d="M14 120h312" />
-            <rect x="66" y="44" width="24" height="152" rx="7" />
-            <rect x="100" y="68" width="18" height="104" rx="5" />
-            <rect x="250" y="44" width="24" height="152" rx="7" />
-            <rect x="222" y="68" width="18" height="104" rx="5" />
-          </svg>
-          <h2>Сила<br />в деталях</h2>
-          <p>Планируй. Выполняй. Расти.</p>
-          <div className="banner-actions">
-            <Link href="/diary" className="banner-btn">Перейти к тренировкам</Link>
-            {cycle && <Link href={`/cycles/${cycle.id}`} className="btn-ghost">Моя программа</Link>}
-          </div>
-        </aside>
-
         <section className="card">
-          <div className="card-head">
-            <h3>Ближайшая тренировка</h3>
-            <CalendarIcon style={{ color: "var(--muted)" }} />
-          </div>
           {nextRow ? (
             <>
-              <b>{planName(nextRow) ?? "План"}</b>
-              <p className="muted" style={{ margin: "6px 0 12px" }}>
-                {nextRow.workout_date ? dayLabel(nextRow.workout_date) : ""}{nextRow.note ? ` · ${nextRow.note}` : ""}
-              </p>
-              <Link href={`/cycles/${nextRow.cycle_id}`} className="primary banner-btn" style={{ margin: 0 }}>
-                Начать тренировку
-              </Link>
+              <div className="h-top">
+                <span className="h-chip">{nextRow.workout_date === today ? "Сегодня" : nextRow.workout_date ? dayLabel(nextRow.workout_date) : "Скоро"}</span>
+                <span className="muted">{planName(nextRow) ?? "План"} · неделя {nextRow.week_number}</span>
+              </div>
+              <h2 className="h-title">{nextRow.note || "Тренировка"}</h2>
+              {planSets > 0 && <p className="muted" style={{ margin: 0 }}>{planSets} подходов</p>}
+              {plan.length > 0 && (
+                <ul className="h-exl">
+                  {plan.map((p, i) => (
+                    <li key={`${p.name}-${i}`}>
+                      <span className="h-n">{i + 1}</span>
+                      <b>{p.name}</b>
+                      <span className="muted">{p.n > 0 && p.reps > 0 ? `${p.n} × ${p.reps}` : ""}</span>
+                      <span className="h-kg">{p.kg > 0 ? `${fmt(p.kg)} кг` : ""}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="banner-actions">
+                <Link href={startHref} className="primary banner-btn"><BoltIcon />Начать тренировку</Link>
+                <Link href={`/cycles/${nextRow.cycle_id}`} className="btn-ghost">Открыть программу</Link>
+              </div>
             </>
           ) : (
             <div className="empty-box">
               <b>Пока ничего не запланировано</b>
-              <p>Запланируй дату тренировки в Дневнике — и она появится здесь.</p>
+              <p>Запланируй дату тренировки в разделе «Тренировки» — и она появится здесь.</p>
               <Link href="/diary" className="btn-ghost">Запланировать</Link>
             </div>
           )}
@@ -163,83 +173,102 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        <div className="h-col">
+          <section className="card">
+            <div className="card-head"><h3>Твой прогресс</h3><Link className="sm-link" href="/progress">Подробнее →</Link></div>
+            {weights.length >= 2 ? (
+              <>
+                <Line values={weights} height={150} gradId="dash" />
+                <div className="mini-metrics">
+                  <div><span className="muted">Вес</span><b>{wLast ? `${fmt(wLast)} кг` : "—"}</b></div>
+                  <div><span className="muted">Объём · 30 дн.</span>
+                    <b className={volPct === null ? "" : volPct >= 0 ? "up" : "down"}>
+                      {volPct === null ? "—" : `${volPct > 0 ? "+" : ""}${volPct.toFixed(0)}%`}
+                    </b>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <svg className="ghost-chart" viewBox="0 0 320 110" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                  <path className="g1" d="M0 22h320M0 55h320M0 88h320" strokeDasharray="4 6" />
+                  <path className="g2" d="M0 78C40 70 70 84 110 60S190 52 230 38 290 30 320 20" strokeWidth="2.5" strokeDasharray="6 7" strokeLinecap="round" />
+                </svg>
+                <p className="muted" style={{ margin: "0 0 14px" }}>Отметь вес в «Теле и целях» — график появится здесь</p>
+                <Link href="/measurements" className="btn-ghost" style={{ color: "var(--acc)" }}>Отметить вес</Link>
+              </>
+            )}
+          </section>
+          <section className="card">
+            <div className="card-head">
+              <h3>Новые рекорды</h3>
+              <Link className="sm-link" href="/progress?tab=overview">Все →</Link>
+            </div>
+            {records.length ? records.map((r) => (
+              <div key={r.name} className="h-rec">
+                <span className="ico"><AwardIcon /></span>
+                <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+                  <b>{r.name}</b>
+                  <span className="muted">1RM · {dayLabel(r.date)} · было {fmt(r.previous, 0)} кг</span>
+                </span>
+                <span className="h-kg">{fmt(r.e1rm, 0)} кг</span>
+              </div>
+            )) : (
+              <p className="muted">Рекорд появится, когда расчётный 1RM в упражнении превысит прежний результат</p>
+            )}
+          </section>
+        </div>
       </div>
 
-      <div className="kpi-grid">
-        <div className="card kpi">
-          <div className="t">Текущая программа</div>
-          <div className="v txt">{cycle?.name ?? "Нет программы"}</div>
-          <span className="s">{cycle ? `${fmt(cycle.weeks_count, 0)} нед.` : "Создай план в Дневнике"}</span>
-          {cycle && <Link className="sm-link" style={{ marginTop: 8, display: "inline-block" }} href={`/cycles/${cycle.id}`}>Подробнее →</Link>}
-        </div>
-        <div className="card kpi">
-          <div className="t">Вес с начала</div>
-          <div className={gainPct === null ? "v empty" : "v"}>{gainPct === null ? "—" : `${gainPct > 0 ? "+" : ""}${gainPct.toFixed(1)}%`}</div>
+      <section className="card h-kpis" aria-label="Показатели">
+        <Link className="h-kpi" href={cycle ? `/cycles/${cycle.id}` : "/diary"}>
+          <span className="t">Программа</span>
+          <span className="v txt">{cycle?.name ?? "Нет программы"}</span>
+          <span className="s">{cycle ? (weekOfCycle ? `неделя ${weekOfCycle} из ${fmt(cycle.weeks_count, 0)}` : `${fmt(cycle.weeks_count, 0)} нед.`) : "Создай план в «Программах»"}</span>
+        </Link>
+        <Link className="h-kpi" href="/measurements">
+          <span className="t">Вес с начала</span>
+          <span className={gainPct === null ? "v empty" : "v"}>{gainPct === null ? "—" : `${gainPct > 0 ? "+" : ""}${gainPct.toFixed(1)}%`}</span>
           <span className="s">от первого замера</span>
-        </div>
-        <div className="card kpi">
-          <div className="t">Проведено тренировок</div>
-          <div className="v acc">{fmt(wCount ?? 0, 0)}</div>
+        </Link>
+        <Link className="h-kpi" href="/diary">
+          <span className="t">Проведено тренировок</span>
+          <span className="v acc">{fmt(wCount ?? 0, 0)}</span>
           <span className="s">без будущих планов</span>
-        </div>
-        <div className="card kpi">
-          <div className="t">Текущий вес</div>
-          <div className={wLast ? "v" : "v empty"}>{wLast ? `${fmt(wLast)} кг` : "—"}</div>
-          {wLast && wPrev && wLast !== wPrev && (
-            <span className={wLast > wPrev ? "s up" : "s down"}>
-              {wLast > wPrev ? "↑" : "↓"} {fmt(Math.abs(wLast - wPrev))} кг к прошлому замеру
-            </span>
-          )}
-          {!wLast && <Link className="sm-link" href="/measurements">Добавить замер →</Link>}
-        </div>
-      </div>
+        </Link>
+        <Link className="h-kpi" href="/measurements">
+          <span className="t">Текущий вес</span>
+          <span className={wLast ? "v" : "v empty"}>{wLast ? `${fmt(wLast)} кг` : "—"}</span>
+          {wLast && wPrev && wLast !== wPrev
+            ? <span className={wLast > wPrev ? "s up" : "s down"}>{wLast > wPrev ? "↑" : "↓"} {fmt(Math.abs(wLast - wPrev))} кг к прошлому замеру</span>
+            : <span className="s">{wLast ? "без изменений" : "добавь первый замер"}</span>}
+        </Link>
+      </section>
 
-      <div className="dash-grid">
-        <section className="card">
-          <div className="card-head">
-            <h3>Последние тренировки</h3>
-            <Link className="sm-link" href="/diary">Все →</Link>
-          </div>
-          {recentRows.length ? recentRows.map((r) => (
-            <Link key={r.id} href={`/cycles/${r.cycle_id}`} className="w-row">
+      <section className="card h-wide">
+        <div className="card-head">
+          <h3>Последние тренировки</h3>
+          <Link className="sm-link" href="/diary">Все →</Link>
+        </div>
+        {recentRows.length ? recentRows.map((r) => {
+          const v = volByWorkout.get(r.id);
+          return (
+            <Link key={r.id} href={woHref(r)} className="w-row">
               <span className="ico"><BoltIcon /></span>
               <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
                 <b>{planName(r) ?? "План"}</b>
-                <span className="muted">{r.note ?? "Тренировка"} · {r.workout_date ? dayLabel(r.workout_date) : "дата не задана"}</span>
+                <span className="muted">
+                  {r.note ?? "Тренировка"} · {r.workout_date ? dayLabel(r.workout_date) : "дата не задана"}{v ? ` · ${fmt(v, 0)} кг` : ""}
+                </span>
               </span>
               <span className="chev"><ChevronIcon /></span>
             </Link>
-          )) : (
-            <p className="muted">Пока нет ни одной тренировки</p>
-          )}
-        </section>
-
-        <section className="card">
-          <h3>Твой прогресс</h3>
-          {weights.length >= 2 ? (
-            <>
-              <Line values={weights} height={150} gradId="dash" />
-              <div className="mini-metrics">
-                <div><span className="muted">Вес</span><b>{wLast ? `${fmt(wLast)} кг` : "—"}</b></div>
-                <div><span className="muted">Объём · 30 дн.</span>
-                  <b className={volPct === null ? "" : volPct >= 0 ? "up" : "down"}>
-                    {volPct === null ? "—" : `${volPct > 0 ? "+" : ""}${volPct.toFixed(0)}%`}
-                  </b>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <svg className="ghost-chart" viewBox="0 0 320 110" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path className="g1" d="M0 22h320M0 55h320M0 88h320" strokeDasharray="4 6" />
-                <path className="g2" d="M0 78C40 70 70 84 110 60S190 52 230 38 290 30 320 20" strokeWidth="2.5" strokeDasharray="6 7" strokeLinecap="round" />
-              </svg>
-              <p className="muted" style={{ margin: "0 0 14px" }}>Отметь вес в Характеристиках — график появится здесь</p>
-              <Link href="/measurements" className="btn-ghost" style={{ color: "var(--acc)" }}>Отметить вес</Link>
-            </>
-          )}
-        </section>
-      </div>
+          );
+        }) : (
+          <p className="muted">Пока нет ни одной тренировки</p>
+        )}
+      </section>
     </>
   );
 }

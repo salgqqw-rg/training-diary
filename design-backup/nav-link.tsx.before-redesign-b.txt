@@ -1,0 +1,38 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  HomeIcon, BookIcon, DumbbellIcon, TrendIcon, UserIcon,
+  TargetIcon, FlameIcon, RulerIcon, UsersIcon, AwardIcon, MessageIcon, ListIcon,
+} from "@/components/icons";
+import { UnreadBadge } from "@/components/unread";
+
+// Иконка пункта меню подбирается по адресу (как в макете IRONLOG)
+const ICONS: Record<string, React.ReactNode> = {
+  "/": <HomeIcon />,
+  "/diary": <BookIcon />,
+  "/exercises": <DumbbellIcon />,
+  "/progress": <TrendIcon />,
+  "/profile": <UserIcon />,
+  "/goals": <TargetIcon />,
+  "/daily": <FlameIcon />,
+  "/measurements": <RulerIcon />,
+  "/clients": <UsersIcon />,
+  "/coaches": <AwardIcon />,
+  "/chat": <MessageIcon />,
+  "/feed": <ListIcon />,
+  "/more": <ListIcon />,
+};
+
+export function NavLink({ href, children, also = [] }: { href: string; children: React.ReactNode; also?: string[] }) {
+  const pathname = usePathname();
+  const active = href === "/" ? pathname === "/" : [href, ...also].some((p) => pathname.startsWith(p));
+  return (
+    <Link href={href} className={active ? "active" : undefined} aria-current={active ? "page" : undefined}>
+      {ICONS[href] ?? null}
+      <span>{children}</span>
+      {(href === "/chat" || href === "/more") && <UnreadBadge />}
+    </Link>
+  );
+}

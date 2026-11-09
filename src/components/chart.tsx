@@ -28,18 +28,18 @@ export function Line({
       <svg viewBox={`0 0 ${W} ${height}`} style={{ width: "100%", height: "auto", display: "block" }}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#a3e635" stopOpacity=".38" />
-            <stop offset="1" stopColor="#a3e635" stopOpacity="0" />
+            <stop offset="0" stopColor="var(--acc)" stopOpacity=".38" />
+            <stop offset="1" stopColor="var(--acc)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {values.length >= 2 && (
           <polygon points={`${px(0)},${base} ${pts} ${px(last)},${base}`} fill={`url(#${gradId})`} />
         )}
         {values.length >= 2 && (
-          <polyline points={pts} fill="none" stroke="#a3e635" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+          <polyline points={pts} fill="none" stroke="var(--acc)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
         )}
         {values.map((v, i) => (
-          <circle key={i} cx={px(i)} cy={py(v)} r={i === last ? 5.5 : 4} fill="#a3e635" />
+          <circle key={i} cx={px(i)} cy={py(v)} r={i === last ? 5.5 : 4} fill="var(--acc)" />
         ))}
       </svg>
       {labels?.length === 2 && <div className="chart-labels"><span>{labels[0]}</span><span>{labels[1]}</span></div>}
