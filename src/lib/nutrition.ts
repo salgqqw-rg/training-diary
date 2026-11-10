@@ -109,3 +109,24 @@ export function calcPlan(i: PlanInput, now = new Date()): PlanResult | { ok: fal
     protein_g: protein, fat_g: fat, carbs_g: carbs, weeks, clamped,
   };
 }
+
+// Ручная норма: калории и/или БЖУ, введённые человеком или тренером (вместо расчёта по анкете).
+// Калории можно не вводить, если заданы все три макроса: тогда это Б×4 + Ж×9 + У×4.
+// Макросы — все три или ни одного. Значения приходят строками из формы.
+export type ManualTarget = { kcal: number; protein_g: number | null; fat_g: number | null; carbs_g: number | null };
+
+export function parseManualTarget(i: { kcal: string; protein: string; fat: string; carbs: string }): ({ ok: true } & ManualTarget) | { ok: false; error: string } {
+  const val = (s: string) => (s.trim() === "" ? null : Number(s.trim().replace(",", ".")));
+  const [k, p, f, c] = [val(i.kcal), val(i.protein), val(i.fat), val(i.carbs)];
+  const macros = [p, f, c];
+  const given = macros.filter((v) => v !== null).length;
+  if (given !== 0 && given !== 3) return { ok: false, error: "Белки, жиры и углеводы: заполните все три или оставьте пустыми" };
+  if (macros.some((v) => v !== null && !(Number.isInteger(v) && v >= 0 && v <= 999))) {
+    return { ok: false, error: "Белки, жиры и углеводы: целые числа от 0 до 999 г" };
+  }
+  if (k !== null && !Number.isInteger(k)) return { ok: false, error: "Калории: целое число" };
+  const kcal = k ?? (given === 3 ? p! * 4 + f! * 9 + c! * 4 : null);
+  if (kcal === null) return { ok: false, error: "Укажите калории или белки, жиры и углеводы" };
+  if (kcal < 500 || kcal > 10000) return { ok: false, error: "Калории: от 500 до 10 000 ккал в день" };
+  return { ok: true, kcal, protein_g: p, fat_g: f, carbs_g: c };
+}

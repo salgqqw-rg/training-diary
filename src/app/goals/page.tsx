@@ -2,9 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { resetPlan, saveMacros } from "@/lib/goal-actions";
+import { resetPlan, saveTarget, resetTarget } from "@/lib/goal-actions";
 import { ACTIVITY, GOALS } from "@/lib/nutrition";
-import { loadPlan } from "@/lib/nutrition-target";
+import { loadPlan, loadManualTarget } from "@/lib/nutrition-target";
 import { PlanForm, type PlanDefaults } from "./plan-form";
 
 const n1 = (v: number, d = 1) => v.toLocaleString("ru-RU", { maximumFractionDigits: d });
@@ -37,7 +37,7 @@ export default async function GoalsPage({
     ? { display_name: null }
     : (await supabase.from("profiles").select("display_name").eq("id", targetId).maybeSingle()).data;
 
-  const data = await loadPlan(supabase, targetId);
+  const [data, manual] = await Promise.all([loadPlan(supabase, targetId), loadManualTarget(supabase, targetId)]);
 
   // Подставляем последний замер, чтобы анкету не заполнять с нуля
   const { data: lastM } = isSelf && !data
@@ -60,6 +60,13 @@ export default async function GoalsPage({
       };
 
   const res = data?.result ?? null;
+  // Норма, которую показываем: заданная вручную главнее расчёта по анкете
+  const eff = manual
+    ? { kcal: manual.kcal, protein_g: manual.protein_g, fat_g: manual.fat_g, carbs_g: manual.carbs_g }
+    : res;
+  const setBy = !manual ? "" : manual.set_by === targetId
+    ? (isSelf ? "Вы задали норму сами" : "Подопечный задал норму сам")
+    : (isSelf ? "Норму задал тренер" : "Норму задали вы");
   let progress = 0;
   if (data && data.plan.goal !== "maintain") {
     const start = Number(data.plan.start_weight_kg);
@@ -73,59 +80,67 @@ export default async function GoalsPage({
   return (
     <>
       <h1>Цели</h1>
-      {!isSelf && <p className="muted">Цель: <b>{target?.display_name ?? "подопечный"}</b> · анкета только для просмотра, БЖУ можно менять</p>}
+      {!isSelf && <p className="muted">Цель: <b>{target?.display_name ?? "подопечный"}</b> · анкета только для просмотра, норму на день можно задать</p>}
       {!isSelf && <p><Link href="/clients">← к подопечным</Link></p>}
       {error && <p className="danger">{error}</p>}
       {ok && <p className="up">{ok}</p>}
 
+      {eff && (
+        <div className="card plan-hero">
+          <div>
+            <span className="plan-goal">{manual ? "Норма задана вручную" : data?.reached ? "Цель достигнута" : GOALS[data!.plan.goal]}</span>
+            <div className="plan-kcal">{n1(eff.kcal, 0)}<small> ккал в день</small></div>
+            <p className="muted" style={{ margin: "4px 0 0", fontSize: 13.5 }}>
+              {manual
+                ? `${setBy}, ${new Date(manual.updated_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}.${res ? ` Расчёт по анкете: ${n1(res.kcal, 0)} ккал.` : ""}`
+                : data!.custom
+                ? "БЖУ заданы вручную, калории — их сумма."
+                : data!.reached
+                ? "Вы дошли до желаемого веса — норма пересчитана на поддержание."
+                : data!.plan.goal === "maintain"
+                  ? "Норма для поддержания текущего веса."
+                  : `${res!.deltaKcal < 0 ? "Дефицит" : "Профицит"} ${Math.abs(res!.deltaKcal)} ккал относительно вашего расхода`}
+            </p>
+          </div>
+          {eff.protein_g !== null && (
+            <div className="plan-macros">
+              <div><span>Белки</span><b>{eff.protein_g} г</b></div>
+              <div><span>Жиры</span><b>{eff.fat_g} г</b></div>
+              <div><span>Углеводы</span><b>{eff.carbs_g} г</b></div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Норма вручную: без анкеты, себе или подопечному. Главнее расчёта. */}
+      <div className="card">
+        <details className="addrow" open={!eff}>
+          <summary>{manual ? "Изменить норму" : "Задать норму вручную"}</summary>
+          <p className="muted" style={{ fontSize: 13 }}>
+            Калории и БЖУ на день{isSelf ? "" : " для подопечного"}. Эта норма заменит расчётную по анкете. Калории можно не вводить:
+            если заданы белки, жиры и углеводы, посчитаем их сами (Б×4 + Ж×9 + У×4). БЖУ можно не указывать вовсе, тогда будет только норма калорий.
+          </p>
+          <form action={saveTarget}>
+            <input type="hidden" name="user_id" value={targetId} />
+            <div className="norm-grid">
+              {([["kcal", "Калории, ккал", eff?.kcal], ["protein", "Белки, г", eff?.protein_g], ["fat", "Жиры, г", eff?.fat_g], ["carbs", "Углеводы, г", eff?.carbs_g]] as const).map(([name, label, v]) => (
+                <label key={name} className={name === "kcal" ? "norm-kcal" : undefined}>{label}
+                  <input name={name} type="number" inputMode="numeric" step={1} min={0} max={name === "kcal" ? 10000 : 999}
+                    defaultValue={v ?? ""} />
+                </label>
+              ))}
+            </div>
+            <div className="row" style={{ marginTop: 10 }}>
+              <button className="primary">Сохранить норму</button>
+              {(manual || data?.custom) && <button formAction={resetTarget} formNoValidate className="sm">Вернуть расчётную</button>}
+            </div>
+          </form>
+        </details>
+      </div>
+
       {data && res && (
         <>
-          <div className="card plan-hero">
-            <div>
-              <span className="plan-goal">{data.reached ? "Цель достигнута" : GOALS[data.plan.goal]}</span>
-              <div className="plan-kcal">{n1(res.kcal, 0)}<small> ккал в день</small></div>
-              <p className="muted" style={{ margin: "4px 0 0", fontSize: 13.5 }}>
-                {data.custom
-                  ? "БЖУ заданы вручную, калории — их сумма."
-                  : data.reached
-                  ? "Вы дошли до желаемого веса — норма пересчитана на поддержание."
-                  : data.plan.goal === "maintain"
-                    ? "Норма для поддержания текущего веса."
-                    : `${res.deltaKcal < 0 ? "Дефицит" : "Профицит"} ${Math.abs(res.deltaKcal)} ккал относительно вашего расхода`}
-              </p>
-            </div>
-            <div className="plan-macros">
-              <div><span>Белки</span><b>{res.protein_g} г</b></div>
-              <div><span>Жиры</span><b>{res.fat_g} г</b></div>
-              <div><span>Углеводы</span><b>{res.carbs_g} г</b></div>
-            </div>
-          </div>
-
-          <div className="card">
-            <details className="addrow">
-              <summary>Изменить БЖУ вручную</summary>
-              <p className="muted" style={{ fontSize: 13 }}>
-                Эти значения заменят расчётные{isSelf ? "" : " для подопечного"}. Калории считаются из них: Б×4 + Ж×9 + У×4.
-              </p>
-              <form action={saveMacros}>
-                <input type="hidden" name="user_id" value={targetId} />
-                <div className="row">
-                  {([["protein", "Белки, г", res.protein_g], ["fat", "Жиры, г", res.fat_g], ["carbs", "Углеводы, г", res.carbs_g]] as const).map(([name, label, v]) => (
-                    <label key={name}>{label}
-                      <input name={name} type="number" inputMode="numeric" step={1} min={0} max={999} required
-                        defaultValue={v} style={{ width: 110 }} />
-                    </label>
-                  ))}
-                </div>
-                <div className="row" style={{ marginTop: 10 }}>
-                  <button className="primary">Сохранить БЖУ</button>
-                  {data.custom && <button name="reset" value="1" formNoValidate className="sm">Вернуть расчётные</button>}
-                </div>
-              </form>
-            </details>
-          </div>
-
-          {res.clamped && !data.reached && (
+          {res.clamped && !data.reached && !manual && (
             <p className="danger">Норма поднята до безопасного минимума: выбранный темп слишком быстрый для вашего расхода.</p>
           )}
 
@@ -151,7 +166,7 @@ export default async function GoalsPage({
 
           <div className="card">
             <h3>Как посчитано</h3>
-            <div className="kpi-grid">
+            <div className="kpi-grid calc-grid">
               <div className="card kpi"><div className="t">Обмен в покое</div><div className="v">{n1(res.bmr, 0)}</div><span className="s">ккал в день</span></div>
               <div className="card kpi"><div className="t">Расход с активностью</div><div className="v">{n1(res.tdee, 0)}</div><span className="s">{ACTIVITY[data.plan.activity].label}</span></div>
               <div className="card kpi"><div className="t">ИМТ</div><div className="v">{n1(res.bmi)}</div><span className="s">возраст {res.age}</span></div>

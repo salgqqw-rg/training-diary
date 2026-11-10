@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { PhotoInput } from "@/components/photo-input";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -33,6 +34,9 @@ const GROUPS: { title: string; fields: { key: string; label: string; unit?: stri
 ];
 
 const ALL_FIELDS = GROUPS.flatMap((g) => g.fields);
+
+// Колонки блока по числу полей; на узких экранах «Ноги» идут в две колонки
+const colsStyle = (n: number) => ({ "--cols": n, "--cols-sm": n === 4 ? 2 : n }) as CSSProperties;
 
 const fmtDate = (iso: string) => {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -151,38 +155,39 @@ export default async function MeasurementsPage({
 
       {tab === "add" && canEdit && (
         <div className="card">
-          <h3>{editDate ? "Изменить замер" : "Новое измерение"}</h3>
           <form action={saveMeasurement}>
-            <div className="row" style={{ marginTop: 6 }}>
-              <label>Дата измерения
-                <input name="date" type="date" required defaultValue={editDate ?? todayStr} style={{ maxWidth: 180 }} />
+            <div className="m-form-head">
+              <h3>{editDate ? "Изменить замер" : "Новое измерение"}</h3>
+              <label className="m-date">Дата измерения
+                <input name="date" type="date" required defaultValue={editDate ?? todayStr} />
               </label>
-              {!editDate && <button className="primary" type="submit">Сохранить</button>}
             </div>
-            {editDate && <button className="primary" type="submit">Обновить</button>}
-            {GROUPS.map((g) => (
-              <div key={g.title} className="m-group">
-                <div className="m-group-label">{g.title}</div>
-                <div className="m-grid">
-                  {g.fields.map((f) => (
-                    <label key={f.key} className="m-field">
-                      {f.label}
-                      <input
-                        name={f.key}
-                        type="number"
-                        step="0.1"
-                        min={0}
-                        placeholder={f.unit}
-                        defaultValue={editing ? String(editing[f.key] ?? "") : ""}
-                      />
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <p className="muted" style={{ fontSize: 12.5, margin: "10px 0 0" }}>
-              Пустые поля сохранятся как «—». Повторный ввод за ту же дату обновит запись.
-            </p>
+            <div className="m-sets">
+              {GROUPS.map((g) => (
+                <section key={g.title} className="m-set">
+                  <div className="m-group-label">{g.title}</div>
+                  <div className="m-set-grid" style={colsStyle(g.fields.length)}>
+                    {g.fields.map((f) => (
+                      <label key={f.key} className="m-field">
+                        {f.label}
+                        <input
+                          name={f.key}
+                          type="number"
+                          step="0.1"
+                          min={0}
+                          placeholder={f.unit}
+                          defaultValue={editing ? String(editing[f.key] ?? "") : ""}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+            <div className="m-form-foot">
+              <p className="muted">Пустые поля сохранятся как «—». Повторный ввод за ту же дату обновит запись.</p>
+              <button className="primary" type="submit">{editDate ? "Обновить" : "Сохранить"}</button>
+            </div>
           </form>
         </div>
       )}
@@ -225,48 +230,57 @@ export default async function MeasurementsPage({
           const prev = measurements[i + 1]; // предыдущая по времени запись
           const day = String(r.measured_on ?? "").slice(0, 10);
           const wDelta = delta(r.weight, prev?.weight);
+          const has = (k: string) => r[k] !== null && r[k] !== undefined;
+          // Блоки без единого значения не показываем, чтобы не шуметь «—»
+          const filled = GROUPS.filter((g) => g.fields.some((f) => has(f.key)));
           return (
             <div key={String(r.id)} className="m-entry">
-              <div className="between">
-                <div>
-                  <b style={{ fontSize: 15.5 }}>{fmtDate(day)}</b>
+              <div className="m-entry-head">
+                <div className="m-entry-title">
+                  <b>{fmtDate(day)}</b>
                   {wDelta && JSON.stringify(r.weight) !== "null" && (
-                    <span className={`muted`} style={{ fontSize: 13, marginLeft: 10 }}>
+                    <span className="muted">
                       вес <span className={wDelta.cls}>{wDelta.text === "0" ? "без изменений" : wDelta.text}</span> · {chip(r.weight)} кг
                     </span>
                   )}
                 </div>
                 {canEdit && (
-                  <span className="row" style={{ gap: 8 }}>
-                    <Link className="sm-link" href={`/measurements?tab=add&date=${day}`}>Изменить</Link>
+                  <div className="m-entry-actions">
+                    <Link className="btn-ghost" href={`/measurements?tab=add&date=${day}`}>Изменить</Link>
                     <form action={deleteMeasurement}>
                       <input type="hidden" name="id" value={String(r.id)} />
-                      <button className="sm danger">✕</button>
+                      <button className="sm danger" aria-label="Удалить замер">✕</button>
                     </form>
-                  </span>
+                  </div>
                 )}
               </div>
-              {GROUPS.map((g) => (
-                <div key={g.title} className="m-group">
-                  <div className="m-group-label">{g.title}</div>
-                  <div className="m-grid">
-                    {g.fields.map((f) => {
-                      const d = delta(r[f.key], prev?.[f.key]);
-                      return (
-                        <div key={f.key} className="m-chip">
-                          <div className="row" style={{ justifyContent: "space-between", gap: 6 }}>
-                            <span className="m-label">{f.label}</span>
-                            {d && d.text !== "0" && <span className={`${d.cls} m-delta`}>{d.text}</span>}
-                          </div>
-                          <div className="v">
-                            {chip(r[f.key])}{r[f.key] !== null && r[f.key] !== undefined && <small> {f.unit}</small>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              {filled.length ? (
+                <div className="m-sets">
+                  {filled.map((g) => (
+                    <section key={g.title} className="m-set">
+                      <div className="m-group-label">{g.title}</div>
+                      <div className="m-set-grid" style={colsStyle(g.fields.length)}>
+                        {g.fields.map((f) => {
+                          const d = delta(r[f.key], prev?.[f.key]);
+                          return (
+                            <div key={f.key} className={has(f.key) ? "m-chip" : "m-chip empty"}>
+                              <span className="m-label">{f.label}</span>
+                              <div className="m-val">
+                                <div className="v">
+                                  {chip(r[f.key])}{has(f.key) && <small> {f.unit}</small>}
+                                </div>
+                                {d && d.text !== "0" && <span className={`${d.cls} m-delta`}>{d.text}</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="muted" style={{ margin: 0, fontSize: 13 }}>Значений в этой записи нет</p>
+              )}
             </div>
           );
         })}

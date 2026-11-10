@@ -62,3 +62,23 @@ export async function loadPlan(supabase: Supa, userId: string) {
 
   return { plan, currentWeight, goalWeight, reached, custom, result: calc && custom ? withCustomMacros(calc, p, f, c) : calc };
 }
+
+export type ManualRow = {
+  kcal: number;
+  protein_g: number | null;
+  fat_g: number | null;
+  carbs_g: number | null;
+  set_by: string;
+  updated_at: string;
+};
+
+// Норма, заданная вручную (самим человеком или тренером). null — не задана
+// (или таблица ещё не создана миграцией 29). Она главнее расчёта по анкете.
+export async function loadManualTarget(supabase: Supa, userId: string): Promise<ManualRow | null> {
+  const { data } = await supabase
+    .from("nutrition_targets")
+    .select("kcal, protein_g, fat_g, carbs_g, set_by, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return (data as ManualRow | null) ?? null;
+}

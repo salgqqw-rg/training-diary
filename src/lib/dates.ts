@@ -26,3 +26,12 @@ export function shiftDay(iso: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+/** Серия дней подряд, в которые есть запись. Сегодня без записи серию не рвёт: день ещё не кончился. */
+export function streakOf(days: Iterable<string>, today: string): { count: number; doneToday: boolean } {
+  const set = new Set(days);
+  const doneToday = set.has(today);
+  let count = 0;
+  for (let d = doneToday ? today : shiftDay(today, -1); set.has(d); d = shiftDay(d, -1)) count++;
+  return { count, doneToday };
+}

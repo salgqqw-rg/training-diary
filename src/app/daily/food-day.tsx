@@ -46,17 +46,13 @@ function Summary({ entries, target }: { entries: MealEntryDTO[]; target: Target 
   ];
   return (
     <div className="fd-sum">
-      <div className="fd-sum-top">
-        <div>
-          <b className="fd-big">{Math.round(kcal)}</b>
-          <small className="muted"> {target ? `из ${target.kcal} ккал` : "ккал"}</small>
-        </div>
-        {left !== null && (
-          <span className={left < 0 ? "fd-left over" : "fd-left"}>{left >= 0 ? `осталось ${left}` : `выше нормы на ${-left}`}</span>
-        )}
-      </div>
-      {target && <i className="fd-bar"><u className={kcal > target.kcal ? "over" : ""} style={{ width: `${Math.min(100, (kcal / target.kcal) * 100)}%` }} /></i>}
       <div className="fd-macros">
+        <div>
+          <span className="lbl">Ккал</span>
+          <b className="fd-big">{Math.round(kcal)}</b>
+          {target && <small className="muted"> / {target.kcal}</small>}
+          {target && <i className="fd-bar thin"><u className={kcal > target.kcal ? "over" : ""} style={{ width: `${Math.min(100, (kcal / target.kcal) * 100)}%` }} /></i>}
+        </div>
         {macros.map((m) => (
           <div key={m.l}>
             <span className="lbl">{m.l}</span>
@@ -66,6 +62,9 @@ function Summary({ entries, target }: { entries: MealEntryDTO[]; target: Target 
           </div>
         ))}
       </div>
+      {left !== null && (
+        <p className={left < 0 ? "fd-left over" : "fd-left"}>{left >= 0 ? `осталось ${left} ккал` : `выше нормы на ${-left} ккал`}</p>
+      )}
     </div>
   );
 }

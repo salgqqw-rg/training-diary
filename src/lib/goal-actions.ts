@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { today } from "@/lib/today";
-import { ACTIVITY, calcPlan, PACES, type Activity, type Goal, type Sex } from "@/lib/nutrition";
+import { ACTIVITY, calcPlan, PACES, parseManualTarget, type Activity, type Goal, type Sex } from "@/lib/nutrition";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -115,38 +115,48 @@ export async function savePlan(fd: FormData) {
   goto("ok", "Норма рассчитана");
 }
 
-// Ручная правка БЖУ: себе или подопечному (тренер). Права проверяет RLS (своя строка или активный тренер).
-// Кнопка «reset» возвращает расчётные значения.
-export async function saveMacros(fd: FormData) {
+// Задать дневную норму вручную (калории и БЖУ): себе или подопечному (тренер).
+// Права проверяет RLS (своя строка или активный тренер), в set_by записывается тот, кто сохранил.
+export async function saveTarget(fd: FormData) {
   const { supabase, user } = await requireUser();
   const uid = String(fd.get("user_id") ?? user.id);
   const back = (key: "error" | "ok", msg: string): never =>
     redirect(`/goals?${uid === user.id ? "" : `user=${encodeURIComponent(uid)}&`}${key}=${encodeURIComponent(msg)}`);
 
-  const reset = fd.get("reset") !== null;
-  const get = (k: string) => (String(fd.get(k) ?? "").trim() === "" ? NaN : num(fd.get(k)));
-  const [p, f, c] = [get("protein"), get("fat"), get("carbs")];
-  if (!reset && ![p, f, c].every((v) => Number.isInteger(v) && v >= 0 && v <= 999)) {
-    back("error", "Белки, жиры и углеводы — целые числа от 0 до 999 г");
-  }
+  const t = parseManualTarget({
+    kcal: String(fd.get("kcal") ?? ""), protein: String(fd.get("protein") ?? ""),
+    fat: String(fd.get("fat") ?? ""), carbs: String(fd.get("carbs") ?? ""),
+  });
+  if (!t.ok) return back("error", t.error); // return: иначе TS не сужает тип (back объявлена стрелкой, а не function)
 
-  const { data, error } = await supabase
-    .from("nutrition_plans")
-    .update(reset
-      ? { custom_protein_g: null, custom_fat_g: null, custom_carbs_g: null }
-      : { custom_protein_g: p, custom_fat_g: f, custom_carbs_g: c })
-    .eq("user_id", uid)
-    .select("user_id");
+  const { error } = await supabase.from("nutrition_targets").upsert(
+    { user_id: uid, kcal: t.kcal, protein_g: t.protein_g, fat_g: t.fat_g, carbs_g: t.carbs_g, set_by: user.id, updated_at: new Date().toISOString() },
+    { onConflict: "user_id" },
+  );
   if (error) {
-    back("error", error.code === "PGRST204" || error.code === "42703"
-      ? "Колонок нет: выполните supabase/migration_25_custom_macros.sql в Supabase"
-      : "Не удалось сохранить БЖУ: " + error.message);
+    back("error", error.code === "42P01"
+      ? "Таблица не создана: выполните supabase/migration_29_manual_target.sql в Supabase"
+      : error.code === "42501"
+        ? "Нет доступа: норму может задать сам человек или его тренер"
+        : "Не удалось сохранить норму: " + error.message);
   }
-  // RLS молча отфильтровывает чужие строки — пустой ответ значит «нет доступа» или анкеты нет
-  if (!data?.length) back("error", "Нет доступа или анкета ещё не заполнена");
+  // Прежняя ручная правка БЖУ (миграция 25) больше не нужна: новая норма главнее. Ошибку не проверяем: колонок может не быть.
+  await supabase.from("nutrition_plans").update({ custom_protein_g: null, custom_fat_g: null, custom_carbs_g: null }).eq("user_id", uid);
 
   revalidatePath("/goals");
-  back("ok", reset ? "Возвращена расчётная норма" : "БЖУ сохранены");
+  revalidatePath("/daily");
+  back("ok", "Норма сохранена");
+}
+
+// Убрать ручную норму: снова считается по анкете
+export async function resetTarget(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const uid = String(fd.get("user_id") ?? user.id);
+  const { error } = await supabase.from("nutrition_targets").delete().eq("user_id", uid);
+  await supabase.from("nutrition_plans").update({ custom_protein_g: null, custom_fat_g: null, custom_carbs_g: null }).eq("user_id", uid);
+  revalidatePath("/goals");
+  revalidatePath("/daily");
+  redirect(`/goals?${uid === user.id ? "" : `user=${encodeURIComponent(uid)}&`}${error ? "error" : "ok"}=${encodeURIComponent(error ? "Не удалось убрать норму: " + error.message : "Ручная норма убрана")}`);
 }
 
 // Удалить анкету (начать заново)

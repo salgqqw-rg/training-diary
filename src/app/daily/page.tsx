@@ -6,9 +6,11 @@ import { today as getToday } from "@/lib/today";
 import { shiftDay } from "@/lib/dates";
 import { activeOn, avgOf, recentFoods, weekOf } from "@/lib/daily-math";
 import { saveDailyLog, deleteDailyLog, deleteSupplement, addWater, toggleSupplementCheck } from "@/lib/daily-actions";
-import { loadPlan } from "@/lib/nutrition-target";
+import { loadPlan, loadManualTarget } from "@/lib/nutrition-target";
 import { SupplementForm } from "./supplement-form";
 import { FoodDay, type MealEntryDTO, type RecentDTO } from "./food-day";
+import { loadStreak } from "@/lib/streak";
+import { StreakBadge } from "@/components/streak-badge";
 import { Line } from "@/components/chart";
 import { Bars } from "@/components/bars";
 
@@ -72,7 +74,7 @@ export default async function DailyPage({
   const prevDay = shiftDay(selDate, -1);
   const canEdit = isSelf;
 
-  const [{ data: rows }, { data: mealRows }, { data: suppRows }, planData, { data: recentRows }, { data: prevRows }, { data: checkRows }] = await Promise.all([
+  const [{ data: rows }, { data: mealRows }, { data: suppRows }, planData, manual, { data: recentRows }, { data: prevRows }, { data: checkRows }, streak] = await Promise.all([
     supabase.from("daily_logs").select("*").eq("user_id", targetId).order("log_date", { ascending: false }),
     supabase
       .from("meal_entries")
@@ -82,6 +84,7 @@ export default async function DailyPage({
       .order("created_at"),
     supabase.from("supplements").select("*").eq("user_id", targetId).order("created_at", { ascending: false }),
     loadPlan(supabase, targetId),
+    loadManualTarget(supabase, targetId),
     // Недавние продукты и вчерашний день нужны только владельцу: тренер ничего не добавляет
     canEdit
       ? supabase.from("meal_entries").select("id, name, grams, kcal").eq("user_id", targetId).order("created_at", { ascending: false }).limit(150)
@@ -90,13 +93,19 @@ export default async function DailyPage({
       ? supabase.from("meal_entries").select("meal").eq("user_id", targetId).eq("log_date", prevDay)
       : Promise.resolve({ data: null }),
     supabase.from("supplement_checks").select("supplement_id").eq("user_id", targetId).eq("log_date", selDate),
+    // Серию показываем только владельцу: у тренера свои права на чтение подходов
+    isSelf ? loadStreak(supabase, targetId, todayStr) : Promise.resolve(null),
   ]);
 
   const logs = (rows ?? []) as Record<string, unknown>[];
   const supplements = (suppRows ?? []) as Record<string, unknown>[];
   const entries = (mealRows ?? []) as unknown as MealEntryDTO[];
   const dayLog = logs.find((r) => r.log_date === selDate);
-  const kcalTarget = planData?.result?.kcal ?? null;
+  // Норма на день: заданная вручную (себе или тренером) главнее расчёта по анкете; без БЖУ — только калории
+  const norm = manual
+    ? { kcal: manual.kcal, protein_g: manual.protein_g ?? 0, fat_g: manual.fat_g ?? 0, carbs_g: manual.carbs_g ?? 0 }
+    : (planData?.result ?? null);
+  const kcalTarget = norm?.kcal ?? null;
   const recent: RecentDTO[] = recentFoods(((recentRows ?? []) as { id: string; name: string; grams: number; kcal: number }[]))
     .map((r) => ({ id: String(r.id), name: String(r.name), grams: Number(r.grams), kcal: Number(r.kcal) }));
   const prevCounts: Record<string, number> = {};
@@ -134,7 +143,7 @@ export default async function DailyPage({
   const dayLbl = (d: string) => (range === 7 ? WEEKDAYS[(new Date(`${d}T00:00:00Z`).getUTCDay() + 6) % 7] : String(Number(d.slice(8))));
   const tiles = [
     { label: "Ккал", ...avgOf(inRange.map((r) => r?.kcal)), unit: "", note: kcalTarget ? `норма ${kcalTarget}` : "" },
-    { label: "Белки", ...avgOf(inRange.map((r) => r?.protein_g)), unit: " г", note: planData?.result ? `норма ${planData.result.protein_g} г` : "" },
+    { label: "Белки", ...avgOf(inRange.map((r) => r?.protein_g)), unit: " г", note: norm?.protein_g ? `норма ${norm.protein_g} г` : "" },
     { label: "Сон", ...avgOf(inRange.map((r) => r?.sleep_h)), unit: " ч", note: "" },
     { label: "Шаги", ...avgOf(inRange.map((r) => r?.steps)), unit: "", note: "" },
     { label: "Вода", ...avgOf(inRange.map((r) => r?.water_ml)), unit: " мл", note: `норма ${WATER_GOAL}` },
@@ -157,6 +166,7 @@ export default async function DailyPage({
   return (
     <>
       <h1>Питание и сон</h1>
+      {streak && <StreakBadge {...streak} />}
       {!isSelf && <p className="muted">Дневник: <b>{target?.display_name ?? "подопечный"}</b> · режим просмотра</p>}
       {isCoachView && <p><Link href="/clients">← к подопечным</Link></p>}
       {error && <p className="danger" role="alert">{error}</p>}
@@ -198,7 +208,13 @@ export default async function DailyPage({
           </div>
           {selDate !== todayStr && <p style={{ margin: "0 0 12px" }}><Link href={dayHref(todayStr)} className="sm-link">К сегодняшнему дню →</Link></p>}
 
-          <FoodDay date={selDate} canEdit={canEdit} entries={entries} target={planData?.result ?? null} recent={recent} prev={{ date: prevDay, counts: prevCounts }} />
+          {!norm && (
+            <p className="muted" style={{ margin: "0 0 12px", fontSize: 13.5 }}>
+              Норма на день не задана. <Link href={isSelf ? "/goals" : `/goals?user=${encodeURIComponent(targetId)}`}>Задать норму</Link>
+            </p>
+          )}
+
+          <FoodDay date={selDate} canEdit={canEdit} entries={entries} target={norm} recent={recent} prev={{ date: prevDay, counts: prevCounts }} />
 
           {/* Вода */}
           <section className="card">
@@ -223,12 +239,12 @@ export default async function DailyPage({
             {canEdit ? (
               <form action={saveDailyLog}>
                 <input type="hidden" name="log_date" value={selDate} />
-                <div className="row" style={{ alignItems: "flex-end" }}>
+                <div className="sleep-row">
                   <label style={COL}>Сон, ч
-                    <input name="sleep_h" type="number" inputMode="decimal" step="0.1" min={0} max={24} defaultValue={dayLog ? String(dayLog.sleep_h ?? "") : ""} style={{ width: 110, margin: 0 }} />
+                    <input name="sleep_h" type="number" inputMode="decimal" step="0.1" min={0} max={24} defaultValue={dayLog ? String(dayLog.sleep_h ?? "") : ""} style={{ margin: 0 }} />
                   </label>
                   <label style={COL}>Шаги
-                    <input name="steps" type="number" inputMode="numeric" step="1" min={0} defaultValue={dayLog ? String(dayLog.steps ?? "") : ""} style={{ width: 130, margin: 0 }} />
+                    <input name="steps" type="number" inputMode="numeric" step="1" min={0} defaultValue={dayLog ? String(dayLog.steps ?? "") : ""} style={{ margin: 0 }} />
                   </label>
                 </div>
                 <label style={{ marginTop: 8 }}>Заметка (самочувствие, что-то важное…)

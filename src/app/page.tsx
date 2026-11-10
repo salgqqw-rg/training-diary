@@ -8,6 +8,8 @@ import { shiftDay } from "@/lib/dates";
 import { Line } from "@/components/chart";
 import { loadUserSets } from "@/lib/user-sets";
 import { newRecords } from "@/lib/analytics";
+import { loadStreak } from "@/lib/streak";
+import { StreakBadge } from "@/components/streak-badge";
 import { ChevronIcon, BoltIcon, CalendarIcon, AwardIcon } from "@/components/icons";
 
 const fmt = (n: number, max = 1) =>
@@ -42,6 +44,7 @@ export default async function HomePage() {
   const today = await getToday();
   const d30 = shiftDay(today, -30);
   const d60 = shiftDay(today, -60);
+  const streak = await loadStreak(supabase, user.id, today, allSets);
 
   // Текущая неделя (пн–вс) для ленты на карточке «Сегодня»
   const weekStart = shiftDay(today, -((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7));
@@ -116,11 +119,17 @@ export default async function HomePage() {
             ? <p className="love-msg">Я тебя очень сильно люблю, котенок! ♥♥♥</p>
             : <p className="muted">Продолжай — ты на правильном пути!</p>}
         </div>
-        <div className="home-aside">
-          {love && <img className="love-sticker" src={sticker} alt="" />}
-          <Link href="/diary" className="btn-ghost"><CalendarIcon />Запланировать</Link>
-        </div>
+        {love && (
+          <div className="home-aside">
+            <img className="love-sticker" src={sticker} alt="" />
+          </div>
+        )}
       </header>
+
+      <div className="home-bar">
+        <StreakBadge {...streak} />
+        <Link href="/diary" className="btn-ghost"><CalendarIcon />Запланировать</Link>
+      </div>
 
       <div className="dash-grid">
         <section className="card">

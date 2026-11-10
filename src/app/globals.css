@@ -281,8 +281,7 @@ label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10p
 label input { margin-top: 5px; width: 100%; }
 
 /* ============ Замеры: записи по датам ============ */
-.m-entry { border-top: 1px solid var(--line); padding: 12px 0 4px; margin-top: 6px; }
-.m-entry:first-child { border-top: none; margin-top: 2px; }
+.m-entry { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .02); }
 .m-group { margin-top: 10px; }
 .m-group-label { font-size: 11.5px; font-weight: 800; letter-spacing: .05em; color: var(--acc-soft); margin: 4px 0 6px; }
 .m-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
@@ -296,6 +295,47 @@ label input { margin-top: 5px; width: 100%; }
 .m-delta { font-size: 12px; font-weight: 800; }
 .m-field input { width: 100%; }
 .m-group .m-field { margin-bottom: 0; }
+
+/* Форма замера: заголовок и дата в шапке, поля блоками по частям тела, подсказка и «Сохранить» внизу */
+.m-form-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.m-form-head h3 { margin: 0; }
+.m-date { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.m-date input { width: 180px; margin: 0; }
+.m-sets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.m-set { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .02); }
+.m-set .m-group-label { margin: 0 0 10px; }
+.m-set-grid { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 10px; }
+.m-set .m-field { margin: 0; }
+.m-sets > .m-set:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* История замеров: шапка записи и значения */
+.m-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; margin-bottom: 12px; }
+.m-entry-title { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.m-entry-title b { font-size: 16px; letter-spacing: -.005em; }
+.m-entry-title .muted { font-size: 13px; }
+.m-entry-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.m-entry-actions form { margin: 0; }
+.m-entry-actions .btn-ghost { height: 36px; padding: 0 14px; font-size: 13px; }
+.m-entry-actions button.sm { min-width: 36px; min-height: 36px; }
+.m-val { display: flex; align-items: baseline; justify-content: space-between; gap: 2px 6px; flex-wrap: wrap; }
+.m-chip.empty { background: transparent; border-style: dashed; border-color: var(--line); }
+.m-chip.empty .v { color: var(--muted); font-weight: 600; }
+.m-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-top: 16px; }
+.m-form-foot p { flex: 1 1 260px; margin: 0; font-size: 12.5px; }
+.m-form-foot .primary { min-width: 180px; min-height: 46px; }
+@media (max-width: 1180px) {
+  .m-sets { align-items: start; }
+  .m-set-grid { grid-template-columns: repeat(var(--cols-sm, var(--cols, 2)), minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .m-sets { grid-template-columns: 1fr; }
+  .m-set-grid { gap: 8px; }
+  .m-date input { width: 150px; }
+  .m-entry { padding: 12px; }
+  .m-entry-actions .btn-ghost { height: 44px; }
+  .m-entry-actions button.sm { min-width: 44px; min-height: 44px; }
+  .m-form-foot .primary { flex: 1 1 100%; }
+}
 
 /* ============ Чат ============ */
 .chat-wrap { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
@@ -1497,14 +1537,38 @@ main:has(> .sec-tabs) > h1 { order: -1; }
   border: 1px solid var(--line); border-radius: 18px; background: var(--card);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
 }
-.fd-sum-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.fd-big { font-family: var(--font-display); font-size: 34px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
-.fd-sum .fd-left { margin: 0; }
-.fd-macros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+.fd-macros .fd-big { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1; }
+.fd-sum .fd-left { margin: 10px 0 0; }
+.fd-macros { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 12px; }
 .fd-macros .lbl { display: block; font-size: 11.5px; color: var(--muted); font-weight: 700; }
 .fd-macros b { font-size: 16px; font-variant-numeric: tabular-nums; }
 .fd-macros small { font-size: 12px; }
 .fd-bar.thin { height: 4px; margin-top: 5px; }
+
+/* Серии: питание — дни подряд (огонёк), тренировки — число записей */
+.streaks { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.streak { --ico: var(--muted); display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 18px 6px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.streak svg { width: 24px; height: 24px; flex: none; color: var(--ico); }
+.streak span { display: block; font-size: 11.5px; font-weight: 700; line-height: 1.2; color: var(--muted); }
+.streak b { display: block; font-size: 15px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.streak.work { --ico: var(--acc); }
+.streak.off { --ico: var(--muted); }
+.streak.on, .streak.risk { --ico: #ff9f43; }
+.streak.on { border-color: rgba(255, 159, 67, .5); }
+.streak.on svg { fill: currentColor; filter: drop-shadow(0 0 7px rgba(255, 159, 67, .6)); }
+@media (prefers-reduced-motion: no-preference) { .streak.risk svg { animation: streak-pulse 2.4s ease-in-out infinite; } }
+@keyframes streak-pulse { 50% { opacity: .45; } }
+/* Главная: счётчики слева, «Запланировать» справа; на телефоне кнопка отдельной строкой */
+.home-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; margin: 0 0 18px; }
+.home-bar .streaks { margin: 0; }
+@media (max-width: 980px) { .home-head .home-aside { justify-content: flex-end; } }
+@media (max-width: 640px) {
+  .streak { flex: 1 1 0; min-width: 0; gap: 8px; padding: 6px 10px; }
+  .streak svg { width: 22px; height: 22px; }
+  .streak b { font-size: 14px; }
+  .home-bar .streaks { flex: 1 1 100%; }
+  .home-bar .btn-ghost { flex: 1 1 100%; justify-content: center; }
+}
 
 /* Приём пищи — карточка с заголовком и кнопкой «+ Добавить» */
 .fd-mc { padding: 14px 16px; margin-bottom: 12px; }
@@ -1587,7 +1651,7 @@ main:has(> .sec-tabs) > h1 { order: -1; }
 
 @media (max-width: 980px) {
   .fd-sum { top: calc(60px + env(safe-area-inset-top, 0px)); padding: 12px 14px; }
-  .fd-big { font-size: 30px; }
+  .fd-macros .fd-big { font-size: 20px; }
   .fd-macros { gap: 8px; }
   .dt-mid b { font-size: 18px; }
   .dt-week { gap: 4px; }
@@ -1596,3 +1660,63 @@ main:has(> .sec-tabs) > h1 { order: -1; }
   .dy-tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .fd-bar u { transition: none; } }
+
+/* Норма вручную: калории на всю строку, под ними три макроса в ряд */
+.norm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 460px; }
+.norm-grid label { display: flex; flex-direction: column; gap: 5px; margin: 0; }
+.norm-grid input { width: 100%; margin: 0; }
+.norm-kcal { grid-column: 1 / -1; }
+
+/* ============================================================
+   Мобильные правки (телефон)
+   ============================================================ */
+.sleep-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sleep-row label { margin: 0; min-width: 0; }
+.sleep-row input { width: 100%; }
+.cycle-new { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto auto; gap: 10px; align-items: center; }
+.cycle-new input { min-width: 0; margin: 0; }
+.cycle-new .muted { align-self: center; font-size: 13px; }
+
+@media (max-width: 640px) {
+  .cycle-new { grid-template-columns: 90px minmax(0, 1fr) auto; }
+  .cycle-new input[name="name"] { grid-column: 1 / -1; }
+
+  /* ккал: число и «/ норма» в две строки, как у остальных столбцов */
+  .fd-macros > div { min-width: 0; }
+  .fd-macros small { display: block; margin-top: 2px; white-space: nowrap; }
+
+  /* цели: три равные плашки БЖУ и список «Как посчитано» в один столбец */
+  .plan-hero { gap: 14px; }
+  .plan-macros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
+  .plan-macros > div { padding: 9px 10px; min-width: 0; }
+  .plan-macros span { font-size: 10.5px; letter-spacing: .02em; }
+  .kpi-grid.calc-grid { grid-template-columns: minmax(0, 1fr); }
+  .kpi-grid.calc-grid > .kpi:first-child, .kpi-grid.calc-grid > .kpi:last-child { grid-column: auto; }
+
+  /* длинные названия в карточках показателей переносятся, а не обрезаются */
+  .kpi .v.txt { white-space: normal; overflow-wrap: anywhere; font-size: 22px; line-height: 1.15;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: clip; }
+
+  /* вкладки внутри раздела: одна строка, при нехватке места прокручиваются */
+  .workout-subtabs { overflow-x: auto; scrollbar-width: none; }
+  .workout-subtabs::-webkit-scrollbar { display: none; }
+  .workout-subtabs a { flex: none; white-space: nowrap; padding: 9px 12px; }
+}
+
+@media (max-width: 560px) {
+  /* карточка программы: название на всю ширину, кнопки отдельной строкой */
+  .card.cycle-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .card.cycle-row > .muted { grid-row: auto; }
+  .card.cycle-row > .row { grid-column: 1; grid-row: auto; display: flex; gap: 8px; }
+  .card.cycle-row > .row > form { flex: 1; }
+  .card.cycle-row > .row > form button { width: 100%; }
+}
+
+/* совсем узкие телефоны (320–360px) */
+select { max-width: 100%; }
+@media (max-width: 360px) {
+  .bottom-nav a span { font-size: 10px; letter-spacing: -.01em; }
+}
+@media (max-width: 340px) {
+  .bottom-nav a span { font-size: 9.5px; }
+}
