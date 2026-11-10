@@ -85,15 +85,15 @@ function ManualForm({ date, meal }: { date: string; meal: string }) {
     <form action={addMealEntry} className="stack" style={{ marginBottom: 0 }}>
       <input type="hidden" name="log_date" value={date} />
       <input type="hidden" name="meal" value={meal} />
-      <div className="row">
-        <label style={{ flex: 2 }}>Наименование
+      <div className="row f-grid">
+        <label className="span2" style={{ flex: 2 }}>Наименование
           <input name="name" required maxLength={100} placeholder="Например: овсянка" />
         </label>
-        <label style={{ flex: 1 }}>Производитель
+        <label className="span2" style={{ flex: 1 }}>Производитель
           <input name="brand" maxLength={50} placeholder="Необязательно" />
         </label>
       </div>
-      <div className="row">
+      <div className="row f-grid">
         <div className="seg" style={{ maxWidth: 280 }}>
           <label className="seg-opt">
             <input type="radio" name="per" value="100" checked={per === "100"} onChange={() => setPer("100")} />
@@ -120,7 +120,7 @@ function ManualForm({ date, meal }: { date: string; meal: string }) {
         {num("c100", "Углеводы, г")}
         {num("p100", "Белки, г")}
       </div>
-      <div className="row">
+      <div className="row f-grid">
         <label>Сколько съедено, г
           <input name="grams" type="number" inputMode="decimal" step="0.1" min={0.1} required value={grams}
             onChange={(e) => setGrams(e.target.value)} style={{ width: 130 }} />
