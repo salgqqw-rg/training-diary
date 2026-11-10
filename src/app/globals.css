@@ -1558,7 +1558,7 @@ main:has(> .sec-tabs) > h1 { order: -1; }
 .streak.on svg { fill: currentColor; filter: drop-shadow(0 0 7px rgba(255, 159, 67, .6)); }
 @media (prefers-reduced-motion: no-preference) { .streak.risk svg { animation: streak-pulse 2.4s ease-in-out infinite; } }
 @keyframes streak-pulse { 50% { opacity: .45; } }
-/* Главная: счётчики слева, «Запланировать» справа; на телефоне кнопка отдельной строкой */
+/* Главная: счётчики серий */
 .home-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; margin: 0 0 18px; }
 .home-bar .streaks { margin: 0; }
 @media (max-width: 980px) { .home-head .home-aside { justify-content: flex-end; } }
@@ -1567,7 +1567,6 @@ main:has(> .sec-tabs) > h1 { order: -1; }
   .streak svg { width: 22px; height: 22px; }
   .streak b { font-size: 14px; }
   .home-bar .streaks { flex: 1 1 100%; }
-  .home-bar .btn-ghost { flex: 1 1 100%; justify-content: center; }
 }
 
 /* Приём пищи — карточка с заголовком и кнопкой «+ Добавить» */
@@ -1720,3 +1719,6 @@ select { max-width: 100%; }
 @media (max-width: 340px) {
   .bottom-nav a span { font-size: 9.5px; }
 }
+
+/* Главная: карточки не тянутся по высоте соседней колонки, пустого места внутри нет */
+@media (min-width: 981px) { .dash-grid { align-items: start; } }

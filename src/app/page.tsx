@@ -10,7 +10,7 @@ import { loadUserSets } from "@/lib/user-sets";
 import { newRecords } from "@/lib/analytics";
 import { loadStreak } from "@/lib/streak";
 import { StreakBadge } from "@/components/streak-badge";
-import { ChevronIcon, BoltIcon, CalendarIcon, AwardIcon } from "@/components/icons";
+import { ChevronIcon, BoltIcon, AwardIcon } from "@/components/icons";
 
 const fmt = (n: number, max = 1) =>
   n.toLocaleString("ru-RU", { maximumFractionDigits: max });
@@ -128,7 +128,6 @@ export default async function HomePage() {
 
       <div className="home-bar">
         <StreakBadge {...streak} />
-        <Link href="/diary" className="btn-ghost"><CalendarIcon />Запланировать</Link>
       </div>
 
       <div className="dash-grid">
