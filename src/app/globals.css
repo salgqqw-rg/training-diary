@@ -1720,5 +1720,13 @@ select { max-width: 100%; }
   .bottom-nav a span { font-size: 9.5px; }
 }
 
-/* Главная: карточки не тянутся по высоте соседней колонки, пустого места внутри нет */
-@media (min-width: 981px) { .dash-grid { align-items: start; } }
+/* Главная: колонки одной высоты; в пустой карточке плана блок по центру, неделя прижата вниз */
+.empty-box .eb-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; margin-bottom: 6px;
+  background: rgba(var(--acc-rgb), .12); color: var(--acc); }
+.empty-box .eb-ico svg { width: 22px; height: 22px; }
+@media (min-width: 981px) {
+  .dash-grid { align-items: stretch; }
+  .dash-grid > .card:first-child { display: flex; flex-direction: column; }
+  .dash-grid > .card:first-child > .empty-box { flex: 1; justify-content: center; align-items: center; text-align: center; }
+  .dash-grid > .card:first-child > .week { margin-top: auto; padding-top: 22px; }
+}

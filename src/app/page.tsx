@@ -10,7 +10,7 @@ import { loadUserSets } from "@/lib/user-sets";
 import { newRecords } from "@/lib/analytics";
 import { loadStreak } from "@/lib/streak";
 import { StreakBadge } from "@/components/streak-badge";
-import { ChevronIcon, BoltIcon, AwardIcon } from "@/components/icons";
+import { ChevronIcon, BoltIcon, CalendarIcon, AwardIcon } from "@/components/icons";
 
 const fmt = (n: number, max = 1) =>
   n.toLocaleString("ru-RU", { maximumFractionDigits: max });
@@ -159,6 +159,7 @@ export default async function HomePage() {
             </>
           ) : (
             <div className="empty-box">
+              <span className="eb-ico" aria-hidden="true"><CalendarIcon /></span>
               <b>Пока ничего не запланировано</b>
               <p>Запланируй дату тренировки в разделе «Тренировки» — и она появится здесь.</p>
               <Link href="/diary" className="btn-ghost">Запланировать</Link>
