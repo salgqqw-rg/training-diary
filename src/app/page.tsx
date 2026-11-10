@@ -109,6 +109,27 @@ export default async function HomePage() {
   const love = isLove(user.email);
   const sticker = `/love/${(Number(today.slice(8)) % 3) + 1}.webp`;
 
+  const recordsCard = (
+    <section className="card">
+      <div className="card-head">
+        <h3>Новые рекорды</h3>
+        <Link className="sm-link" href="/progress?tab=overview">Все →</Link>
+      </div>
+      {records.length ? records.map((r) => (
+        <div key={r.name} className="h-rec">
+          <span className="ico"><AwardIcon /></span>
+          <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+            <b>{r.name}</b>
+            <span className="muted">1RM · {dayLabel(r.date)} · было {fmt(r.previous, 0)} кг</span>
+          </span>
+          <span className="h-kg">{fmt(r.e1rm, 0)} кг</span>
+        </div>
+      )) : (
+        <p className="muted">Рекорд появится, когда расчётный 1RM в упражнении превысит прежний результат</p>
+      )}
+    </section>
+  );
+
   return (
     <>
       <header className="home-head">
@@ -209,24 +230,7 @@ export default async function HomePage() {
               </>
             )}
           </section>
-          <section className="card">
-            <div className="card-head">
-              <h3>Новые рекорды</h3>
-              <Link className="sm-link" href="/progress?tab=overview">Все →</Link>
-            </div>
-            {records.length ? records.map((r) => (
-              <div key={r.name} className="h-rec">
-                <span className="ico"><AwardIcon /></span>
-                <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-                  <b>{r.name}</b>
-                  <span className="muted">1RM · {dayLabel(r.date)} · было {fmt(r.previous, 0)} кг</span>
-                </span>
-                <span className="h-kg">{fmt(r.e1rm, 0)} кг</span>
-              </div>
-            )) : (
-              <p className="muted">Рекорд появится, когда расчётный 1RM в упражнении превысит прежний результат</p>
-            )}
-          </section>
+          {nextRow && recordsCard}
         </div>
       </div>
 
@@ -255,29 +259,32 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      <section className="card h-wide">
-        <div className="card-head">
-          <h3>Последние тренировки</h3>
-          <Link className="sm-link" href="/diary">Все →</Link>
-        </div>
-        {recentRows.length ? recentRows.map((r) => {
-          const v = volByWorkout.get(r.id);
-          return (
-            <Link key={r.id} href={woHref(r)} className="w-row">
-              <span className="ico"><BoltIcon /></span>
-              <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-                <b>{planName(r) ?? "План"}</b>
-                <span className="muted">
-                  {r.note ?? "Тренировка"} · {r.workout_date ? dayLabel(r.workout_date) : "дата не задана"}{v ? ` · ${fmt(v, 0)} кг` : ""}
+      <div className="dash-grid dash-low">
+        <section className="card h-wide">
+          <div className="card-head">
+            <h3>Последние тренировки</h3>
+            <Link className="sm-link" href="/diary">Все →</Link>
+          </div>
+          {recentRows.length ? recentRows.map((r) => {
+            const v = volByWorkout.get(r.id);
+            return (
+              <Link key={r.id} href={woHref(r)} className="w-row">
+                <span className="ico"><BoltIcon /></span>
+                <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+                  <b>{planName(r) ?? "План"}</b>
+                  <span className="muted">
+                    {r.note ?? "Тренировка"} · {r.workout_date ? dayLabel(r.workout_date) : "дата не задана"}{v ? ` · ${fmt(v, 0)} кг` : ""}
+                  </span>
                 </span>
-              </span>
-              <span className="chev"><ChevronIcon /></span>
-            </Link>
-          );
-        }) : (
-          <p className="muted">Пока нет ни одной тренировки</p>
-        )}
-      </section>
+                <span className="chev"><ChevronIcon /></span>
+              </Link>
+            );
+          }) : (
+            <p className="muted">Пока нет ни одной тренировки</p>
+          )}
+        </section>
+        {!nextRow && recordsCard}
+      </div>
     </>
   );
 }

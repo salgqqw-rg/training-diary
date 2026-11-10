@@ -1720,13 +1720,29 @@ select { max-width: 100%; }
   .bottom-nav a span { font-size: 9.5px; }
 }
 
-/* Главная: колонки одной высоты; в пустой карточке плана блок по центру, неделя прижата вниз */
-.empty-box .eb-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; margin-bottom: 6px;
+/* Главная: мозаика. Ряд 1: план + прогресс; ряд 2: показатели; ряд 3: последние тренировки + рекорды */
+.empty-box .eb-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
   background: rgba(var(--acc-rgb), .12); color: var(--acc); }
 .empty-box .eb-ico svg { width: 22px; height: 22px; }
 @media (min-width: 981px) {
-  .dash-grid { align-items: stretch; }
+  .dash-grid { align-items: stretch; gap: 16px; margin-bottom: 16px; }
+  .dash-grid > .card, .h-col > .card { padding: 22px 24px; }
+  .h-kpis { margin-bottom: 16px; }
   .dash-grid > .card:first-child { display: flex; flex-direction: column; }
-  .dash-grid > .card:first-child > .empty-box { flex: 1; justify-content: center; align-items: center; text-align: center; }
-  .dash-grid > .card:first-child > .week { margin-top: auto; padding-top: 22px; }
+  .dash-grid > .card:first-child > .week { margin-top: auto; padding-top: 18px; }
+  /* пустой план: одна компактная строка «иконка · текст · кнопка» */
+  .empty-box { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ico title btn" "ico text btn";
+    column-gap: 16px; row-gap: 2px; align-items: center; padding: 16px 18px; }
+  .empty-box .eb-ico { grid-area: ico; margin: 0; }
+  .empty-box b { grid-area: title; }
+  .empty-box p { grid-area: text; }
+  .empty-box .btn-ghost { grid-area: btn; margin: 0; }
+  .dash-low { grid-template-columns: 1.4fr 1fr; margin-bottom: 0; }
+  .dash-low > .card:only-child { grid-column: 1 / -1; }
+  .dash-low .w-row { min-height: 54px; padding: 7px 10px; }
+  .dash-low .w-row .ico { width: 36px; height: 36px; }
+}
+@media (max-width: 980px) {
+  .empty-box { align-items: flex-start; }
+  .empty-box .eb-ico { margin-bottom: 6px; }
 }
