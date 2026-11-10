@@ -69,8 +69,8 @@ export function PlanForm({ defaults, submitLabel }: { defaults: PlanDefaults; su
             <span>Женщина</span>
           </label>
         </div>
-        <div className="row" style={{ marginTop: 12 }}>
-          <label>Дата рождения
+        <div className="row f-grid" style={{ marginTop: 12 }}>
+          <label className="span2">Дата рождения
             <input name="birth_date" type="date" required value={birth} onChange={(e) => setBirth(e.target.value)}
               max={new Date().toISOString().slice(0, 10)} />
           </label>

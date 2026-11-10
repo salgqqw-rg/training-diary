@@ -1746,3 +1746,29 @@ select { max-width: 100%; }
   .empty-box { align-items: flex-start; }
   .empty-box .eb-ico { margin-bottom: 6px; }
 }
+
+/* ============================================================
+   Формы и вкладки на телефоне (по скриншотам с iPhone)
+   ============================================================ */
+@media (max-width: 640px) {
+  /* поля формы: две равные колонки, ничего не налезает друг на друга */
+  .f-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  .f-grid > label { min-width: 0; margin: 0; }
+  .f-grid > label.span2 { grid-column: 1 / -1; }
+  .f-grid input, .f-grid select { width: 100% !important; min-width: 0; max-width: 100%; margin-left: 0; margin-right: 0; }
+
+  /* «Новое измерение»: заголовок, под ним дата на всю ширину */
+  .m-form-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .m-date input { width: 100%; }
+
+  /* четыре вкладки раздела помещаются в одну строку */
+  .workout-subtabs { gap: 0; justify-content: space-between; }
+  .workout-subtabs a { font-size: 13px; padding: 9px 8px; }
+
+  /* сводка питания: подписи ровно по верхней линии, единица «г» рядом с числом */
+  .fd-macros { align-items: start; }
+  .fd-macros small.u { display: inline; margin-top: 0; }
+
+  /* выбор цели: текст не упирается в рамку */
+  .seg-opt span { padding: 10px 6px; font-size: 14px; line-height: 1.25; }
+}

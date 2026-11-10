@@ -57,7 +57,7 @@ function Summary({ entries, target }: { entries: MealEntryDTO[]; target: Target 
           <div key={m.l}>
             <span className="lbl">{m.l}</span>
             <b>{m.v >= 100 ? Math.round(m.v) : f1(m.v)}</b>
-            {m.t ? <small className="muted"> / {m.t} г</small> : <small className="muted"> г</small>}
+            {m.t ? <small className="muted"> / {m.t} г</small> : <small className="muted u"> г</small>}
             {m.t ? <i className="fd-bar thin"><u className={m.v > m.t ? "over" : ""} style={{ width: `${Math.min(100, (m.v / m.t) * 100)}%` }} /></i> : null}
           </div>
         ))}

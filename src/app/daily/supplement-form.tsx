@@ -12,25 +12,25 @@ export function SupplementForm() {
     <form action={addSupplements} className="stack">
       {ids.map((id) => (
         <div key={id} className="stack" style={{ marginBottom: 0, paddingBottom: 12, borderBottom: ids.length > 1 ? "1px solid var(--line)" : undefined }}>
-          <div className="row">
-            <label>Тип
+          <div className="row f-grid">
+            <label className="span2">Тип
               <select name="kind" defaultValue="supplement" style={{ width: "100%" }}>
                 <option value="supplement">Добавка</option>
                 <option value="bac">БАД</option>
                 <option value="course">Курс ААС</option>
               </select>
             </label>
-            <label style={{ flex: 2 }}>Название
+            <label className="span2" style={{ flex: 2 }}>Название
               <input name="name" required maxLength={100} placeholder="Например: витамин D3" style={{ width: "100%" }} />
             </label>
-            <label style={{ flex: 2 }}>Дозировка
+            <label className="span2" style={{ flex: 2 }}>Дозировка
               <input name="dosage" maxLength={100} placeholder="Например: 5000 МЕ/день" style={{ width: "100%" }} />
             </label>
           </div>
-          <div className="row">
+          <div className="row f-grid">
             <label>Начало<input name="start_date" type="date" /></label>
             <label>Окончание<input name="end_date" type="date" /></label>
-            <label style={{ flex: 1 }}>Заметка
+            <label className="span2" style={{ flex: 1 }}>Заметка
               <input name="note" maxLength={300} placeholder="Необязательно" style={{ width: "100%" }} />
             </label>
             {ids.length > 1 && (
