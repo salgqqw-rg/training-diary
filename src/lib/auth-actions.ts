@@ -68,18 +68,6 @@ export async function signOut() {
   redirect("/login");
 }
 
-// Вход через Google (один клик — авторизация в аккаунте Google)
-export async function signInWithGoogle() {
-  const supabase = await createClient();
-  const origin = await appOrigin();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${origin}/auth/callback` },
-  });
-  if (error) redirect("/login?error=" + encodeURIComponent("Google не настроен: " + error.message));
-  if (data.url) redirect(data.url);
-}
-
 // Восстановление пароля: шлём письмо со ссылкой на форму нового пароля
 export async function resetPassword(fd: FormData) {
   const supabase = await createClient();

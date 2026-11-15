@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { MIN_PASSWORD } from "@/lib/password";
-import { signUp, signInWithGoogle } from "@/lib/auth-actions";
+import { signUp } from "@/lib/auth-actions";
 import { PasswordInput } from "@/components/password-input";
-import { UserIcon, MailIcon, GoogleIcon } from "@/components/icons";
+import { UserIcon, MailIcon } from "@/components/icons";
 
 export default async function RegisterPage({
   searchParams,
@@ -42,13 +42,6 @@ export default async function RegisterPage({
           <PasswordInput name="password" minLength={MIN_PASSWORD} required placeholder="Пароль" autoComplete="new-password" />
           <PasswordInput name="confirm" minLength={MIN_PASSWORD} required placeholder="Подтвердите пароль" autoComplete="new-password" />
           <button className="primary">Зарегистрироваться</button>
-        </form>
-        <div className="or"><span>или</span></div>
-        <form action={signInWithGoogle}>
-          <button className="google" type="submit">
-            <GoogleIcon />
-            Продолжить с Google
-          </button>
         </form>
         <p className="auth-alt">Уже есть аккаунт? <Link href="/login">Войти</Link></p>
       </div>

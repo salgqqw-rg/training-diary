@@ -1010,14 +1010,20 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 .lib-steps { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 8px; }
 .lib-tip { margin: 0; padding: 10px 14px; border-radius: 12px; background: rgba(var(--acc-rgb), .08); border: 1px solid rgba(var(--acc-rgb), .25); }
 
-.mm { display: flex; gap: 8px; justify-content: center; }
-.mm-fig { margin: 0; text-align: center; flex: 1; max-width: 120px; }
+.mm-wrap { display: grid; gap: 10px; }
+.mm { display: flex; gap: 6px; justify-content: center; }
+.mm-fig { margin: 0; text-align: center; flex: 1; max-width: 130px; }
 .mm-fig svg { width: 100%; height: auto; display: block; }
-.mm-fig figcaption { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.mm-body { fill: #24242b; stroke: #34343c; stroke-width: 1; }
-.mm g path { fill: #2c2c34; }
-.mm g.mm-also path { fill: rgba(var(--acc-rgb), .35); }
-.mm g.mm-main path { fill: var(--acc); filter: drop-shadow(0 0 5px rgba(var(--acc-rgb), .5)); }
+.mm-fig figcaption { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-top: 4px; }
+.mm-body { fill: #1f1f26; }
+.mm-idle path { fill: #2d2d36; stroke: #1f1f26; stroke-width: 1.2; }
+.mm-also path { fill: rgba(var(--acc-rgb), .38); stroke: #1f1f26; stroke-width: 1.2; }
+.mm-main path { fill: var(--acc); stroke: #1f1f26; stroke-width: 1.2; filter: drop-shadow(0 0 6px rgba(var(--acc-rgb), .55)); }
+.mm-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.mm-legend li { display: flex; align-items: center; gap: 8px; }
+.mm-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.mm-dot.main { background: var(--acc); }
+.mm-dot.also { background: rgba(var(--acc-rgb), .38); }
 
 .lib-form label { margin-bottom: 12px; }
 .lib-form textarea, .lib-form select { margin-top: 5px; }
@@ -1032,7 +1038,7 @@ details[open] > summary { margin-bottom: 14px; }
 
 @media (max-width: 720px) {
   .lib-detail { grid-template-columns: 1fr; }
-  .mm { max-width: 260px; margin: 0 auto; }
+  .mm-wrap { max-width: 280px; margin: 0 auto; }
   .lib-media-edit { grid-template-columns: 1fr; }
   .lib-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
@@ -1043,7 +1049,6 @@ details[open] > summary { margin-bottom: 14px; }
 main, .lib-chips { min-width: 0; }
 .lib-chips { max-width: 100%; }
 @media (max-width: 980px) { main { width: 100%; } }
-.lib-art { width: 100%; max-width: 560px; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
 
 /* Дневник: строки циклов — название / срок / кнопки в трёх ровных колонках */
 .card.cycle-row > .muted { text-align: center; }

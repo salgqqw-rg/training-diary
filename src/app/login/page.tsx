@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { signIn, signInWithGoogle } from "@/lib/auth-actions";
+import { signIn } from "@/lib/auth-actions";
 import { PasswordInput } from "@/components/password-input";
-import { UserIcon, CalendarIcon, CheckSquareIcon, BoltIcon, GoogleIcon } from "@/components/icons";
+import { UserIcon, CalendarIcon, CheckSquareIcon, BoltIcon } from "@/components/icons";
 
 export default async function LoginPage({
   searchParams,
@@ -40,13 +40,6 @@ export default async function LoginPage({
           <div className="auth-check-row" style={{ justifyContent: "flex-end" }}>
             <Link href="/forgot-password" className="auth-footlink">Забыли пароль?</Link>
           </div>
-          <div className="or"><span>или</span></div>
-          <form action={signInWithGoogle}>
-            <button className="google" type="submit">
-              <GoogleIcon />
-              Войти через Google
-            </button>
-          </form>
           <p className="auth-alt">Нет аккаунта? <Link href="/register">Зарегистрироваться</Link></p>
         </div>
       </section>

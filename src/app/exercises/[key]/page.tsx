@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import {
-  findBuiltIn, isUuid, norm, photoUrls, videoView, MUSCLES, KINDS, type Muscle,
+  findBuiltIn, isUuid, norm, videoView, MUSCLES, KINDS, type Muscle,
 } from "@/lib/exercise-catalog";
 import { loadRecords } from "@/lib/exercise-records";
 import { deleteExercise } from "@/lib/exercise-actions";
@@ -37,7 +37,7 @@ export default async function ExercisePage({ params }: { params: Promise<{ key: 
   const steps = builtIn?.steps ?? [];
   const imageUrl: string | null = row?.image_url ?? null;
   const video = videoView(row?.video_url);
-  const photos = imageUrl ? [imageUrl] : builtIn?.photo ? photoUrls(builtIn.photo) : [];
+  const photos = imageUrl ? [imageUrl] : []; // только свои фото; встроенные картинки убраны
   const rec = (await loadRecords(supabase, user.id)).get(norm(name));
   const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(name + " техника выполнения")}`;
 
@@ -61,9 +61,6 @@ export default async function ExercisePage({ params }: { params: Promise<{ key: 
           )}
           {video?.kind === "file" && <video className="lib-video" src={video.src} controls preload="metadata" />}
           {video?.kind === "link" && <p><a href={video.src} target="_blank" rel="noopener noreferrer">▶ Открыть видео</a></p>}
-          {builtIn?.image && !imageUrl && (
-            <img className="lib-art" src={builtIn.image} alt={`Схема: ${name}`} loading="lazy" />
-          )}
           {photos.length > 0 && (
             <div className={`lib-photos${photos.length > 1 ? " two" : ""}`}>
               {photos.map((p) => <img key={p} src={p} alt={`${name}`} loading="lazy" />)}
@@ -122,7 +119,7 @@ export default async function ExercisePage({ params }: { params: Promise<{ key: 
         {row && (
           <form action={deleteExercise} style={{ marginTop: 12 }}>
             <input type="hidden" name="id" value={row.id} />
-            <button className="sm danger">{builtIn ? "Вернуть стандартные фото" : "Удалить упражнение"}</button>
+            <button className="sm danger">{builtIn ? "Убрать свои фото и видео" : "Удалить упражнение"}</button>
           </form>
         )}
       </section>
