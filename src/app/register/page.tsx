@@ -7,11 +7,23 @@ import { UserIcon, MailIcon, GoogleIcon } from "@/components/icons";
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; sent?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, sent } = await searchParams;
   return (
     <div className="auth-solo auth-sharp">
+      {sent && (
+        <div className="mail-modal" role="dialog" aria-modal="true" aria-labelledby="mail-title">
+          <div className="mail-box">
+            <div className="mail-ico"><MailIcon /></div>
+            <h3 id="mail-title">Проверь почту</h3>
+            <p>Мы отправили письмо на <b>{sent}</b>.</p>
+            <p>Открой его и нажми на ссылку, чтобы подтвердить аккаунт — после этого можно войти.</p>
+            <p className="mail-hint">Письма нет? Загляни в папку «Спам».</p>
+            <Link href="/login" className="mail-btn">Понятно, перейти ко входу</Link>
+          </div>
+        </div>
+      )}
       <div className="auth-center">
         <Link href="/" className="logo">
           Solo<span>.</span>

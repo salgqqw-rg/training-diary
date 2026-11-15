@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FocusEvent } from "react";
 import { addSet, deleteSet, updateSetsBulk } from "@/lib/actions";
 import { startRest } from "@/components/rest-timer";
 
@@ -93,6 +93,17 @@ export function SetsTable({
   const upd = (id: string, key: keyof Local, v: string) =>
     setLocal((cur) => cur.map((r) => (r.id === id ? { ...r, [key]: v } : r)));
 
+  // при входе в поле «0» стирается (иначе приходится удалять вручную), остальное выделяется целиком
+  const onFocus = (id: string, key: keyof Local) => (e: FocusEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    if (v !== "" && Number(v.replace(",", ".")) === 0) upd(id, key, "");
+    else e.target.select();
+  };
+  // если поле оставили пустым — возвращаем 0 (вес и повторы обязательны)
+  const onBlurZero = (id: string, key: keyof Local) => (e: FocusEvent<HTMLInputElement>) => {
+    if (e.target.value.trim() === "") upd(id, key, "0");
+  };
+
   const saveRows = async (lock: boolean) => {
     const fd = new FormData();
     fd.set("cycle_id", cycleId);
@@ -154,11 +165,11 @@ export function SetsTable({
           {local.map((r, i) => (
             <tr key={r.id}>
               <td>{i + 1}</td>
-              <td><input className={cell} type="number" step="0.5" min={0} value={r.weight} disabled={pending} onChange={(e) => upd(r.id, "weight", e.target.value)} aria-label={`Вес, подход ${i + 1}`} /></td>
-              <td><input className={cell} type="number" step="1" min={0} value={r.reps} disabled={pending} onChange={(e) => upd(r.id, "reps", e.target.value)} aria-label={`Повт., подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="0.5" min={0} value={r.weight} disabled={pending} onFocus={onFocus(r.id, "weight")} onBlur={onBlurZero(r.id, "weight")} onChange={(e) => upd(r.id, "weight", e.target.value)} aria-label={`Вес, подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="1" min={0} value={r.reps} disabled={pending} onFocus={onFocus(r.id, "reps")} onBlur={onBlurZero(r.id, "reps")} onChange={(e) => upd(r.id, "reps", e.target.value)} aria-label={`Повт., подход ${i + 1}`} /></td>
               <td><input className={cell} type="text" maxLength={5} value={r.rir} disabled={pending} placeholder="1-2" onChange={(e) => upd(r.id, "rir", e.target.value)} aria-label={`RIR, подход ${i + 1}`} /></td>
-              <td><input className={cell} type="number" step="0.5" min={1} max={10} value={r.rpe} disabled={pending} placeholder="—" onChange={(e) => upd(r.id, "rpe", e.target.value)} aria-label={`RPE, подход ${i + 1}`} /></td>
-              <td><input className={cell} type="number" step="5" min={0} max={3600} value={r.rest} disabled={pending} placeholder="—" onChange={(e) => upd(r.id, "rest", e.target.value)} aria-label={`Отдых, сек, подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="0.5" min={1} max={10} value={r.rpe} disabled={pending} placeholder="—" onFocus={onFocus(r.id, "rpe")} onChange={(e) => upd(r.id, "rpe", e.target.value)} aria-label={`RPE, подход ${i + 1}`} /></td>
+              <td><input className={cell} type="number" step="5" min={0} max={3600} value={r.rest} disabled={pending} placeholder="—" onFocus={onFocus(r.id, "rest")} onChange={(e) => upd(r.id, "rest", e.target.value)} aria-label={`Отдых, сек, подход ${i + 1}`} /></td>
               <td>
                 <button className="sm danger" disabled={pending} onClick={() => remove(r.id)} aria-label="Удалить подход">✕</button>
               </td>

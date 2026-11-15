@@ -1815,3 +1815,18 @@ select { max-width: 100%; }
   .workout-subtabs a { padding: 9px 6px; font-size: 12.5px; }
   input[type="date"], input[type="month"] { padding-left: 10px; padding-right: 8px; }
 }
+
+/* ---------- Окошко «Проверь почту» после регистрации ---------- */
+.mail-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(0, 0, 0, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.mail-box { width: 100%; max-width: 400px; text-align: center; background: var(--card); border: 1px solid var(--line);
+  border-radius: 22px; padding: 32px 26px; box-shadow: 0 24px 70px rgba(0, 0, 0, .6); }
+.mail-ico { width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(var(--acc-rgb), .14); color: var(--acc); }
+.mail-ico svg { width: 28px; height: 28px; }
+.mail-box h3 { margin: 0 0 12px; font-size: 22px; }
+.mail-box p { margin: 0 0 10px; font-size: 15px; line-height: 1.45; word-break: break-word; }
+.mail-box .mail-hint { color: var(--muted); font-size: 13px; }
+.mail-btn { display: block; margin-top: 18px; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 15px;
+  background: var(--acc); color: var(--acc-ink); }
+.mail-btn:hover { background: var(--acc-hi); }

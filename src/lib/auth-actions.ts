@@ -22,7 +22,12 @@ export async function signIn(fd: FormData) {
     email: String(fd.get("email") ?? ""),
     password: String(fd.get("password") ?? ""),
   });
-  if (error) redirect("/login?error=" + encodeURIComponent("Неверный email или пароль"));
+  if (error) {
+    const msg = error.code === "email_not_confirmed"
+      ? "Почта не подтверждена — открой письмо от нас и перейди по ссылке (проверь и «Спам»)"
+      : "Неверный email или пароль";
+    redirect("/login?error=" + encodeURIComponent(msg));
+  }
   revalidatePath("/", "layout");
   redirect("/");
 }
@@ -36,12 +41,22 @@ export async function signUp(fd: FormData) {
   const weak = passwordError(password);
   if (weak) redirect("/register?error=" + encodeURIComponent(weak));
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email: String(fd.get("email") ?? ""),
+  const email = String(fd.get("email") ?? "").trim();
+  const { data, error } = await supabase.auth.signUp({
+    email,
     password,
-    options: { data: { display_name: String(fd.get("name") ?? "").trim() } },
+    options: {
+      data: { display_name: String(fd.get("name") ?? "").trim() },
+      emailRedirectTo: `${await appOrigin()}/auth/callback`,
+    },
   });
   if (error) redirect("/register?error=" + encodeURIComponent(error.message));
+  // Email уже занят: при включённом подтверждении Supabase не отдаёт ошибку, а письмо не шлёт
+  if (data.user && data.user.identities?.length === 0) {
+    redirect("/register?error=" + encodeURIComponent("Этот email уже зарегистрирован — войди или восстанови пароль"));
+  }
+  // Сессии нет — значит нужно подтвердить почту: показываем окошко «Проверь почту»
+  if (!data.session) redirect("/register?sent=" + encodeURIComponent(email));
   revalidatePath("/", "layout");
   redirect("/");
 }
