@@ -41,6 +41,10 @@ export default async function RegisterPage({
           </div>
           <PasswordInput name="password" minLength={MIN_PASSWORD} required placeholder="Пароль" autoComplete="new-password" />
           <PasswordInput name="confirm" minLength={MIN_PASSWORD} required placeholder="Подтвердите пароль" autoComplete="new-password" />
+          <label className="consent auth">
+            <input type="checkbox" name="consent" required />
+            <span>Я согласен(на) с <Link href="/terms" target="_blank">пользовательским соглашением</Link> и на обработку моих персональных данных</span>
+          </label>
           <button className="primary">Зарегистрироваться</button>
         </form>
         <p className="auth-alt">Уже есть аккаунт? <Link href="/login">Войти</Link></p>

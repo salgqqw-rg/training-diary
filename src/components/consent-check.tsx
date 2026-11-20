@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const KEY = "consent-personal-data";
 
@@ -35,7 +36,7 @@ export function ConsentCheck() {
     <label className="consent">
       <input type="checkbox" checked={checked} onChange={(e) => toggle(e.target.checked)} />
       <span>
-        Я согласен(на) с пользовательским соглашением и на обработку моих персональных данных
+        Я согласен(на) с <Link href="/terms" target="_blank">пользовательским соглашением</Link> и на обработку моих персональных данных
         <small>Данные тренировок, замеров и профиля используются только для работы дневника.</small>
       </span>
     </label>

@@ -38,6 +38,9 @@ export async function signUp(fd: FormData) {
   if (confirm && password !== confirm) {
     redirect("/register?error=" + encodeURIComponent("Пароли не совпадают"));
   }
+  if (!fd.get("consent")) {
+    redirect("/register?error=" + encodeURIComponent("Нужно согласие на обработку персональных данных"));
+  }
   const weak = passwordError(password);
   if (weak) redirect("/register?error=" + encodeURIComponent(weak));
   const supabase = await createClient();
