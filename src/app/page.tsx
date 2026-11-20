@@ -10,7 +10,6 @@ import { loadUserSets } from "@/lib/user-sets";
 import { newRecords } from "@/lib/analytics";
 import { loadStreak } from "@/lib/streak";
 import { StreakBadge } from "@/components/streak-badge";
-import { ConsentCheck } from "@/components/consent-check";
 import { ChevronIcon, BoltIcon, CalendarIcon, AwardIcon } from "@/components/icons";
 
 const fmt = (n: number, max = 1) =>
@@ -286,8 +285,6 @@ export default async function HomePage() {
         </section>
         {!nextRow && recordsCard}
       </div>
-
-      <ConsentCheck />
     </>
   );
 }
