@@ -30,10 +30,10 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Solo. — дневник тренировок", template: "%s · Solo." },
+  title: { default: "Соло. — дневник тренировок", template: "%s · Соло." },
   description: "Дневник тренировок: циклы по неделям, подходы с RIR и RPE, прогресс, питание и сон, связь с тренером.",
-  applicationName: "Solo.",
-  appleWebApp: { capable: true, title: "Solo.", statusBarStyle: "black-translucent" },
+  applicationName: "Соло.",
+  appleWebApp: { capable: true, title: "Соло.", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
@@ -43,11 +43,11 @@ export const viewport: Viewport = {
   themeColor: "#060607",
 };
 
-// Логотип Solo. (белое слово + лаймовая точка, как акцент в former IRONLOG)
+// Логотип Соло. (белое слово + лаймовая точка, как акцент в former IRONLOG)
 function Logo({ small }: { small?: boolean }) {
   return (
     <Link href="/" className={small ? "logo sm" : "logo"}>
-      Solo<span>.</span>
+      Соло<span>.</span>
     </Link>
   );
 }

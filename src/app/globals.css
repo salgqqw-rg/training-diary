@@ -511,6 +511,7 @@ input[type="file"] { display: none; }
 /* Экран регистрации: чёткий фирменный фон (фото 1) поверх общего размытого */
 .auth-sharp::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  width: auto; height: auto; transform: none;   /* сброс размеров свечения из .auth-solo::before */
   background: url("/solo-logo.webp") center / cover;
 }
 .auth-sharp::after {

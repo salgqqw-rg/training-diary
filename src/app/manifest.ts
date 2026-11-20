@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 // Манифест: на телефоне сайт можно «Установить» / добавить на экран и открывать как приложение
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Solo. — дневник тренировок",
-    short_name: "Solo.",
+    name: "Соло. — дневник тренировок",
+    short_name: "Соло.",
     description: "Дневник тренировок, прогресс, питание и сон",
     lang: "ru",
     start_url: "/",

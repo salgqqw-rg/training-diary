@@ -26,7 +26,7 @@ export default async function RegisterPage({
       )}
       <div className="auth-center">
         <Link href="/" className="logo">
-          Solo<span>.</span>
+          Соло<span>.</span>
         </Link>
         {error && <p className="danger">{error}</p>}
         <h2>Создай свой аккаунт</h2>
