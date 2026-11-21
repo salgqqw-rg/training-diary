@@ -73,11 +73,12 @@ const NAV_BOTTOM = [
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
+  const path = (await headers()).get("x-pathname") ?? "";
 
   // Неавторизованным показываем только шапку с логотипом, без навигации.
   // Экраны входа/регистрации — полноэкранные, без шапки (макет IRONLOG).
-  if (!user) {
-    const path = (await headers()).get("x-pathname") ?? "";
+  // «Новый пароль» — тоже всегда без меню: по ссылке из письма у человека уже есть сессия восстановления.
+  if (!user || path.startsWith("/update-password")) {
     const bare = path === "/login" || path === "/forgot-password"
       || path.startsWith("/register") || path.startsWith("/update-password") || path.startsWith("/auth/");
     if (bare) {
